@@ -535,7 +535,7 @@ def build_evidence_email(audit: dict[str, Any], company_name: str, to_email: str
     subj = f"Quick technical note on {domain} (score {score}/100)"
     body = (
         f"Hello {company_name} team,\n\n"
-        f"A passive external check of {domain} (score {score}/100, scorecard attached) flagged three quick fixes:\n\n"
+        f"A passive external check of {domain} (score {score}/100, scorecard attached) flagged these quick fixes:\n\n"
         + "\n".join(bullets[:3])
         + f"\n\nI already generated the Word/Excel audit and drop-in config fixes for {domain}. "
         "Want me to reply with those files free for your IT team?\n\n"
@@ -579,6 +579,34 @@ def build_email_message(
             filename=attachment_path.name,
         )
     return msg
+
+
+def load_dotenv_files(extra_paths: list[Path] | None = None, include_defaults: bool = True) -> None:
+    """Safely load KEY=VALUE pairs from ~/.env and ./.env into os.environ without overwriting existing keys."""
+    candidates: list[Path] = []
+    if include_defaults:
+        try:
+            candidates.append(Path.home() / ".env")
+        except RuntimeError:
+            pass
+        candidates.append(Path.cwd() / ".env")
+    if extra_paths:
+        candidates.extend(extra_paths)
+    seen: set[Path] = set()
+    for p in candidates:
+        resolved = p.resolve()
+        if resolved in seen or not resolved.is_file():
+            continue
+        seen.add(resolved)
+        for raw_line in resolved.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, val = line.split("=", 1)
+            key = key.strip()
+            val = val.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = val
 
 
 def resolve_smtp_settings(provider: str) -> tuple[str, int]:
@@ -694,6 +722,7 @@ def process_dispatch_queue(
 
     sent_count = 0
     if dispatch_mode == "smtp":
+        load_dotenv_files()
         if not confirm_send:
             raise RuntimeError("Refusing SMTP send without explicit --confirm-send safety flag.")
         smtp_user = from_email or os.environ.get("SMTP_USER", "").strip()
@@ -751,6 +780,7 @@ def process_dispatch_queue(
 
 
 def main(argv: list[str] | None = None) -> int:
+    load_dotenv_files()
     parser = argparse.ArgumentParser(
         description="Automated Email QA Gate, 4-Detector Ensemble, Humanizer & Outlook (.eml) / SMTP Dispatcher."
     )

@@ -3,6 +3,7 @@
 
 import csv
 import json
+import os
 import shutil
 import tempfile
 import unittest
@@ -14,6 +15,7 @@ from unittest.mock import MagicMock, patch
 from outreach_qa_dispatcher import (
     build_evidence_email,
     evaluate_4_detectors,
+    load_dotenv_files,
     process_dispatch_queue,
     run_qa_humanizer_loop,
 )
@@ -112,6 +114,27 @@ class TestOutreachQADispatcher(unittest.TestCase):
         attachments = list(parsed.iter_attachments())
         self.assertEqual(len(attachments), 1)
         self.assertEqual(attachments[0].get_filename(), "scorecard.png")
+
+    def test_en_email_bullet_count_matches_actual_findings(self) -> None:
+        two_gap_audit = {
+            "domain": "two-gaps.ch",
+            "overall_score": 57,
+            "findings": [
+                {"id": "EML-01", "title": "DMARC", "status": "FAIL", "evidence": "Missing _dmarc"},
+                {"id": "SEC-02", "title": "HSTS", "status": "FAIL", "evidence": "Missing HSTS"},
+            ],
+        }
+        _subj, body = build_evidence_email(two_gap_audit, "Two Gaps GmbH", "info@two-gaps.ch", lang="en")
+        self.assertNotIn("three quick fixes", body.lower())
+        self.assertNotIn("`", body)
+
+    def test_load_dotenv_files_reads_custom_env_without_overwriting(self) -> None:
+        env_file = self.temp_dir / ".env"
+        env_file.write_text('SMTP_USER="user@example.ch"\n# comment\nEXISTING_KEY=from_file\n', encoding="utf-8")
+        with patch.dict("os.environ", {"EXISTING_KEY": "already_set"}, clear=True):
+            load_dotenv_files([env_file], include_defaults=False)
+            self.assertEqual(os.environ.get("SMTP_USER"), "user@example.ch")
+            self.assertEqual(os.environ.get("EXISTING_KEY"), "already_set")
 
     def test_smtp_refuses_without_confirm_and_sends_with_mock(self) -> None:
         ev_json = self.temp_dir / "ev.json"
