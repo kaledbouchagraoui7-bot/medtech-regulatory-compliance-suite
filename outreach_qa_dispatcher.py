@@ -474,7 +474,7 @@ def build_evidence_email(audit: dict[str, Any], company_name: str, to_email: str
     bullets: list[str] = []
     if lang == "de":
         if "EML-01" in top_ids:
-            bullets.append(f"1. Kein `_dmarc.{domain}` DNS-Eintrag: Dritte können E-Mails im Namen Ihrer Domain fälschen.")
+            bullets.append(f"1. Kein _dmarc.{domain} DNS-Eintrag: Dritte können E-Mails im Namen Ihrer Domain fälschen.")
         if "PRV-01" in top_ids:
             bullets.append("2. Remote Google Fonts (revDSG): Besucher-IPs gehen vor Einwilligung an fonts.googleapis.com (USA).")
         if "PRV-03" in top_ids:
@@ -499,7 +499,7 @@ def build_evidence_email(audit: dict[str, Any], company_name: str, to_email: str
 
     if lang == "fr":
         if "EML-01" in top_ids:
-            bullets.append(f"1. Absence d'enregistrement DNS `_dmarc.{domain}` : risque d'usurpation d'e-mails.")
+            bullets.append(f"1. Absence d'enregistrement DNS _dmarc.{domain} : risque d'usurpation d'e-mails.")
         if "PRV-01" in top_ids:
             bullets.append("2. Polices Google Fonts distantes : transfert d'IP visiteurs vers les USA dès le chargement.")
         if "PRV-03" in top_ids:
@@ -524,7 +524,7 @@ def build_evidence_email(audit: dict[str, Any], company_name: str, to_email: str
 
     # English fallback
     if "EML-01" in top_ids:
-        bullets.append(f"1. Missing `_dmarc.{domain}` DNS policy: domain is open to email spoofing.")
+        bullets.append(f"1. Missing _dmarc.{domain} DNS policy: domain is open to email spoofing.")
     else:
         bullets.append(f"1. DMARC enforcement check: {next((f['evidence'] for f in audit['findings'] if f['id']=='EML-01'), 'Needs enforcement review')}")
     if "PRV-01" in top_ids:
@@ -604,6 +604,9 @@ def process_dispatch_queue(
     out_dir.mkdir(parents=True, exist_ok=True)
     drafts_dir = out_dir / "outlook_drafts_eml"
     drafts_dir.mkdir(parents=True, exist_ok=True)
+    for old_eml in drafts_dir.glob("*.eml"):
+        old_eml.unlink()
+    seen_eml_paths: set[Path] = set()
     ledger_path = out_dir / "sent_ledger.csv"
     qa_report_csv = out_dir / "qa_detector_report.csv"
 
@@ -642,9 +645,10 @@ def process_dispatch_queue(
 
         slug = re.sub(r"[^a-z0-9]+", "_", domain.lower()).strip("_")
         eml_path = drafts_dir / f"{slug}_{lang}_draft.eml"
-        if eml_path.exists():
+        if eml_path in seen_eml_paths:
             rec_part = re.sub(r"[^a-z0-9]+", "_", to_email.split("@")[0].lower()).strip("_")
             eml_path = drafts_dir / f"{slug}_{rec_part}_{lang}_draft.eml"
+        seen_eml_paths.add(eml_path)
 
         if qa["approved"]:
             status_label = "APPROVED"
