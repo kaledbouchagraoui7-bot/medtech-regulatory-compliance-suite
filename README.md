@@ -53,7 +53,21 @@ python medtech_suite.py audit-domain example-medtech.ch --output-dir output
 python medtech_suite.py clinical-prisma --records records.csv --config config.json --output-dir output
 ```
 
-### 4. Run the Automated Test Suite
+### 4. Run the Automated QA Briefing & Outreach Dispatcher (`outreach_qa_dispatcher.py`)
+
+Runs a **4-detector AI-text ensemble (`<10%` threshold)**, iterative stylometric humanizer loop, and B2B professionalism/UWG opt-out verifier before outputting Outlook `.eml` drafts (`X-Unsent: 1` with `.png` scorecards attached) or dispatching via throttled Outlook/Gmail SMTP:
+
+```bash
+# Safe Default: Verify <10% AI score + build ready-to-click Outlook .eml drafts
+python outreach_qa_dispatcher.py --manifest manifest.csv --output-dir outreach_queue --dispatch draft
+
+# Live Throttled Dispatch (requires SMTP_USER & SMTP_PASSWORD in environment/.env)
+python outreach_qa_dispatcher.py --manifest manifest.csv --dispatch smtp --provider outlook --confirm-send --max-send 10
+```
+
+*(Note: Official REST API detectors `GPTZERO_API_KEY` and `SAPLING_API_KEY` are queried automatically alongside the 4 local stylometric detectors whenever configured in environment variables.)*
+
+### 5. Run the Automated Test Suite
 
 ```bash
 python -m unittest discover -p "test_*.py" -v
