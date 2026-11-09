@@ -186,9 +186,13 @@ def detector_2_burstiness_cadence(text: str) -> tuple[float, list[str]]:
     if mean_len > 17.5:
         score += min(40.0, (mean_len - 17.5) * 4.5)
         hits.append(f"long_mean_sent:{mean_len:.1f}w")
+    # Realistic baseline gradient for natural burstiness vs uniformity
     if cv < 0.28 and len(sents) >= 4:
         score += min(45.0, (0.28 - cv) * 180.0)
         hits.append(f"low_burstiness_cv:{cv:.2f}")
+    elif cv < 0.42:
+        score += round((0.42 - cv) * 28.0, 1)
+
     if len(lengths) >= 4 and max(lengths) - min(lengths) <= 4:
         score += 20.0
         hits.append("uniform_sentence_lengths")
@@ -209,6 +213,8 @@ def detector_3_syntactic_formulaicity(text: str) -> tuple[float, list[str]]:
     if abs_ratio > 0.14:
         score += min(45.0, (abs_ratio - 0.14) * 320.0)
         hits.append(f"high_nominalization:{abs_ratio:.2f}")
+    elif abs_ratio > 0.03:
+        score += round((abs_ratio - 0.03) * 55.0, 1)
 
     # Repetitive sentence starters (e.g., "I ...", "I ...", "We ...", "We ...")
     sents = split_sentences(text)
@@ -346,7 +352,8 @@ def verify_professionalism(
 
     # Require transparent 1-line opt-out / no-pressure closing for Swiss UWG / GDPR B2B hygiene
     has_opt_out = bool(re.search(
-        r"(kein interesse|abmelden|nicht mehr|pas pertinent|ne pas|stop|not relevant|opt out|no follow)",
+        r"(kein interesse|kein bedarf|nicht erneut|keine nachfragen|abmelden|nicht mehr|"
+        r"pas pertinent|ne relancerai pas|ne pas|stop|not relevant|opt out|no follow)",
         lower_body,
     ))
     if not has_opt_out:
@@ -561,7 +568,7 @@ def build_email_message(
         msg["X-Unsent"] = "1"
     msg.set_content(body, subtype="plain", charset="utf-8")
 
-    if attachment_path and attachment_path.exists():
+    if attachment_path and attachment_path.is_file():
         raw_bytes = attachment_path.read_bytes()
         subtype = attachment_path.suffix.lstrip(".").lower() or "octet-stream"
         maintype = "image" if subtype in ("png", "jpg", "jpeg") else "application"
@@ -611,7 +618,7 @@ def process_dispatch_queue(
         rows = list(csv.DictReader(f))
 
     qa_results: list[dict[str, Any]] = []
-    approved_queue: list[tuple[dict[str, str], dict[str, Any], EmailMessage, Path]] = []
+    approved_queue: list[tuple[dict[str, str], dict[str, Any], EmailMessage, Path | None]] = []
 
     for row in rows:
         domain = row["domain"].strip()
@@ -639,7 +646,13 @@ def process_dispatch_queue(
             rec_part = re.sub(r"[^a-z0-9]+", "_", to_email.split("@")[0].lower()).strip("_")
             eml_path = drafts_dir / f"{slug}_{rec_part}_{lang}_draft.eml"
 
-        status_label = "APPROVED" if qa["approved"] else "BLOCKED_ABOVE_THRESHOLD"
+        if qa["approved"]:
+            status_label = "APPROVED"
+        elif not qa["professionalism_ok"]:
+            status_label = "BLOCKED_PROFESSIONALISM"
+        else:
+            status_label = "BLOCKED_ABOVE_THRESHOLD"
+
         qa_results.append({
             "domain": domain,
             "to_email": to_email,
@@ -652,6 +665,7 @@ def process_dispatch_queue(
             "d4_boilerplate": qa["detector_scores"]["D4_Outreach_Boilerplate"],
             "passes_used": qa["passes_used"],
             "professionalism_ok": qa["professionalism_ok"],
+            "professionalism_issues": "; ".join(qa["professionalism_issues"]),
             "eml_draft": str(eml_path) if qa["approved"] else "",
         })
 
@@ -665,7 +679,7 @@ def process_dispatch_queue(
                 unsent_draft=True,
             )
             eml_path.write_bytes(bytes(msg_draft))
-            approved_queue.append((row, qa, msg_draft, attachment if attachment else Path()))
+            approved_queue.append((row, qa, msg_draft, attachment))
 
     # Save QA CSV report
     if qa_results:
@@ -701,7 +715,7 @@ def process_dispatch_queue(
                     to_email=dest,
                     subject=qa["final_subject"],
                     body=qa["final_body"],
-                    attachment_path=att_p if att_p.exists() else None,
+                    attachment_path=att_p if (att_p is not None and att_p.is_file()) else None,
                     unsent_draft=False,
                 )
                 server.send_message(live_msg)
