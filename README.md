@@ -58,3 +58,9 @@ python medtech_suite.py clinical-prisma --records records.csv --config config.js
 ```bash
 python -m unittest discover -p "test_*.py" -v
 ```
+
+---
+
+## Legal, Ethical & Regulatory QA Compliance
+
+See [`LEGAL_COMPLIANCE_AND_ETHICS.md`](LEGAL_COMPLIANCE_AND_ETHICS.md) for the mandatory Swiss (`StGB Art. 143bis`, `UWG Art. 3(1)(o)`, `nFADP`, `MedDO`) and EU (`MDR 2017/745`, `GDPR`, `EAA`) legal, ethical, and human-in-the-loop QA rules.
