@@ -11,6 +11,7 @@ output/
 live_targets_output/
 outreach_queue/
 private_outreach_queue/
+private_outreach_queue_intl/
 *.eml
 sent_ledger.csv
 
