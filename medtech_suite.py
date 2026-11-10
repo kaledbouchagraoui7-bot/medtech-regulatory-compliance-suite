@@ -44,6 +44,7 @@ from docx.enum.section import WD_ORIENT
 from docx.shared import Inches, Pt, RGBColor
 
 from pilot_package_generator import build_pilot_package
+from ra_operations_command_center import build_ra_command_center_package
 from sentinel_scanner import (
     build_domain_audit_package,
     generate_excel_audit_workbook,
@@ -247,6 +248,24 @@ def main(argv: list[str] | None = None) -> int:
     p_uni.add_argument("--config", default="config.json", help="Path to clinical search config.json")
     p_uni.add_argument("--output-dir", default="output", help="Output directory")
 
+    # Subcommand 4: ra-command-center (Solves the 5 RA Pain Points + Spider-Web Verticals)
+    p_ra = sub.add_parser(
+        "ra-command-center",
+        help="Run the RA 5-Painkiller Command Center (Upstream SLA Blame-Shield, eCTD Cross-Check, Guidance Drift, Statutory Hold & Spider-Web Matrix)",
+    )
+    p_ra.add_argument(
+        "--input",
+        default="sample_ra_submission_state.json",
+        help="Path to RA submission state JSON",
+    )
+    p_ra.add_argument(
+        "--vertical",
+        default="medtech_ra",
+        choices=["medtech_ra", "ai_governance", "fintech_dora", "esg_csrd"],
+        help="Spider-Web multi-industry vertical preset",
+    )
+    p_ra.add_argument("--output-dir", default="output", help="Output directory")
+
     args = parser.parse_args(argv)
 
     if args.command == "audit-domain":
@@ -266,6 +285,16 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"[unified-dossier] {args.domain}: Digital Score={res['domain_score']}/100 ({res['domain_grade']}) | "
             f"Clinical Studies Included={res['studies_included']} -> {res['zip_path']}"
+        )
+    elif args.command == "ra-command-center":
+        res = build_ra_command_center_package(
+            args.input, args.output_dir, args.vertical
+        )
+        r = res["report"]
+        print(
+            f"[ra-command-center] {r['submission_id']} ({r['vertical']}): "
+            f"Readiness={r['overall_readiness_score']}/100 | Verdict='{r['gate_decision']}' | "
+            f"Upstream Delay={r['total_upstream_overdue_days']}d vs RA={r['ra_overdue_days']}d -> {res['zip']}"
         )
     return 0
 

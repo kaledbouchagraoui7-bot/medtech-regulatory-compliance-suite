@@ -17,6 +17,7 @@ import openpyxl
 from docx import Document
 
 from medtech_suite import build_unified_medtech_dossier
+from ra_operations_command_center import build_ra_command_center_package
 
 
 class TestUnifiedMedTechSuite(unittest.TestCase):
@@ -121,6 +122,60 @@ class TestUnifiedMedTechSuite(unittest.TestCase):
         full_text = "\n".join(p.text for p in doc.paragraphs)
         self.assertIn("UNIFIED MEDTECH & CRO COMPLIANCE DOSSIER", full_text)
         self.assertIn("52/100", full_text)
+
+    def test_ra_command_center_solves_five_pain_points_and_spiderweb_verticals(self) -> None:
+        sample_json = self.repo_dir / "sample_ra_submission_state.json"
+        res = build_ra_command_center_package(
+            input_json=sample_json,
+            base_out=self.temp_dir,
+            vertical="medtech_ra",
+        )
+        rep = res["report"]
+
+        # 1. Lack of Direct Control: Upstream overdue > 0 while RA overdue == 0
+        self.assertEqual(rep["ra_overdue_days"], 0)
+        self.assertEqual(rep["total_upstream_overdue_days"], 23)
+        self.assertGreaterEqual(len(rep["escalation_chasers"]), 3)
+
+        # 2. Shifting Goalposts: Guidance Drift Radar
+        self.assertEqual(rep["drift_counts"]["GAP_DETECTED"], 2)
+
+        # 3. Middleman Pressure Shield: Statutory Hold decision & CRL risk
+        self.assertIn("STATUTORY HOLD", rep["gate_decision"])
+        self.assertGreater(rep["crl_probability_pct"], 80)
+
+        # 4. Massive Documentation Burden: eCTD M1-M5 Cross-Check Linter
+        self.assertEqual(rep["xchk_counts"]["FAIL"], 3)
+        self.assertEqual(rep["xchk_counts"]["PASS"], 2)
+
+        # 5. Deliverables & Spider-Web Expansion Matrix sheet
+        self.assertTrue(res["docx"].exists())
+        self.assertTrue(res["xlsx"].exists())
+        self.assertTrue(res["png"].exists())
+        self.assertTrue(res["pdf"].exists())
+        self.assertTrue(res["zip"].exists())
+
+        wb = openpyxl.load_workbook(str(res["xlsx"]))
+        self.assertEqual(
+            wb.sheetnames,
+            [
+                "1_Upstream_SLA_BlameShield",
+                "2_eCTD_CrossCheck_Linter",
+                "3_Agency_Guidance_Drift",
+                "4_Escalation_Chasers",
+                "5_SpiderWeb_Expansion",
+                "6_README",
+            ],
+        )
+
+        # Verify Spider-Web adaptation to AI Governance vertical
+        res_ai = build_ra_command_center_package(
+            input_json=sample_json,
+            base_out=self.temp_dir,
+            vertical="ai_governance",
+        )
+        self.assertEqual(res_ai["report"]["vertical"], "ai_governance")
+        self.assertIn("AI-ACT", res_ai["report"]["submission_id"])
 
 
 if __name__ == "__main__":

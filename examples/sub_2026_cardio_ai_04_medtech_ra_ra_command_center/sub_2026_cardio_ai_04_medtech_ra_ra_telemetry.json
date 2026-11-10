@@ -1,0 +1,313 @@
+{
+  "submission_id": "SUB-2026-CARDIO-AI-04",
+  "product_name": "CardioPulse AI-Guided Ablation Catheter System (Class III / PMA & EU MDR Class III)",
+  "vertical": "medtech_ra",
+  "target_submission_date": "2026-11-25",
+  "evaluation_date": "2026-11-10",
+  "overall_readiness_score": 61,
+  "gate_decision": "STATUTORY HOLD — DO NOT SUBMIT (REFUSE-TO-FILE / CRL BLOCKERS ACTIVE)",
+  "crl_probability_pct": 98,
+  "rtf_blockers_count": 8,
+  "total_upstream_overdue_days": 23,
+  "ra_overdue_days": 0,
+  "upstream_delay_cost_usd": 1035000,
+  "premature_filing_crl_cost_usd": 4212000,
+  "manual_hours_saved": 51.5,
+  "dept_delay_summary": [
+    {
+      "package_id": "PKG-CMC-301",
+      "department": "CMC & Manufacturing",
+      "owner_email": "cmc-lead@biomed-internal.example",
+      "module_ref": "eCTD Module 3.2.P / MDR Annex II Sec 3",
+      "title": "Sterilization Validation & 24-Month Accelerated Stability Batch Analysis",
+      "due_date": "2026-10-29",
+      "submitted_date": "NOT SUBMITTED",
+      "status": "OVERDUE_INCOMPLETE",
+      "overdue_days": 12,
+      "delay_share_pct": 52.2,
+      "completeness_pct": 58,
+      "missing_count": 3,
+      "missing_fields": [
+        "24m_real_time_stability_table",
+        "extractables_leachables_signed_coa",
+        "batch_lot_B2026_09_impurity_profile"
+      ],
+      "statutory_citation": "21 CFR 314.50(d)(1) / ICH Q1A(R2) / EU MDR Annex II §3.2",
+      "rtf_blocker": true
+    },
+    {
+      "package_id": "PKG-RND-204",
+      "department": "R&D & Software Engineering",
+      "owner_email": "rnd-director@biomed-internal.example",
+      "module_ref": "eCTD Module 4 / MDR Annex II Sec 4 (GSPR 17.2 & FDA 524B)",
+      "title": "Cybersecurity SBOM, Penetration Test Closure & AI Algorithm Drift Validation",
+      "due_date": "2026-11-03",
+      "submitted_date": "2026-11-09",
+      "status": "LATE_INCOMPLETE",
+      "overdue_days": 7,
+      "delay_share_pct": 30.4,
+      "completeness_pct": 72,
+      "missing_count": 3,
+      "missing_fields": [
+        "cyclonedx_sbom_signed_json",
+        "unresolved_cve_remediation_matrix",
+        "pccp_ml_retraining_boundary_spec"
+      ],
+      "statutory_citation": "FD&C Act Sec. 524B (Cybersecurity) / EU MDR Annex I GSPR 17.2",
+      "rtf_blocker": true
+    },
+    {
+      "package_id": "PKG-CLIN-501",
+      "department": "Clinical Operations & Biostatistics",
+      "owner_email": "biostats-lead@biomed-internal.example",
+      "module_ref": "eCTD Module 5.3.5 / MDR Annex XIV Clinical Evaluation (CER)",
+      "title": "Pivotal Trial NCT05892104 Final CSR & Locked Statistical Table 1 / AE Line Listings",
+      "due_date": "2026-11-06",
+      "submitted_date": "2026-11-10",
+      "status": "LATE_MISMATCH",
+      "overdue_days": 4,
+      "delay_share_pct": 17.4,
+      "completeness_pct": 88,
+      "missing_count": 2,
+      "missing_fields": [
+        "pi_wet_or_part11_electronic_signature_page",
+        "reconciled_sae_patient_count_vs_module2"
+      ],
+      "statutory_citation": "ICH E3 / ICH E6(R3) / 21 CFR Part 11 / EU MDR Annex XIV",
+      "rtf_blocker": true
+    },
+    {
+      "package_id": "PKG-QMS-102",
+      "department": "Quality Assurance (QMS)",
+      "owner_email": "qa-head@biomed-internal.example",
+      "module_ref": "eCTD Module 1.12 / MDR Annex IX QMS Certificate",
+      "title": "ISO 13485:2016 Audit Closure & Supplier CAPA Verification",
+      "due_date": "2026-11-08",
+      "submitted_date": "2026-11-08",
+      "status": "COMPLETE_ON_TIME",
+      "overdue_days": 0,
+      "delay_share_pct": 0.0,
+      "completeness_pct": 100,
+      "missing_count": 0,
+      "missing_fields": [],
+      "statutory_citation": "ISO 13485:2016 / EU MDR Art. 10(9)",
+      "rtf_blocker": false
+    },
+    {
+      "package_id": "PKG-RA-000",
+      "department": "Regulatory Affairs (RA Core Team)",
+      "owner_email": "ra-lead@internal.example",
+      "module_ref": "eCTD Backbone / Gateway Publishing & Statutory QA",
+      "title": "Dossier Compilation, Validation Rules & Agency Gateway Readiness",
+      "due_date": "2026-11-10",
+      "submitted_date": "2026-11-10",
+      "status": "COMPLETE_ON_TIME",
+      "overdue_days": 0,
+      "delay_share_pct": 0.0,
+      "completeness_pct": 100,
+      "missing_count": 0,
+      "missing_fields": [],
+      "statutory_citation": "ICH M4 / eCTD v3.2.2 & v4.0",
+      "rtf_blocker": false
+    }
+  ],
+  "ectd_cross_checks": [
+    {
+      "check_id": "XCHK-01",
+      "parameter": "Pivotal Study Sample Size (Enrolled / PP Population N)",
+      "source_a_module": "Module 2.5 / 2.7 Clinical Overview",
+      "source_a_value": "N = 240 (ITT), N = 228 (Per-Protocol)",
+      "source_b_module": "Module 5.3.5 Pivotal CSR Table 14.1.1",
+      "source_b_value": "N = 240 (ITT), N = 224 (Per-Protocol — 4 protocol deviations excluded late)",
+      "status": "FAIL",
+      "severity": "CRITICAL_CRL_RISK",
+      "regulatory_impact": "Direct numerical discrepancy between Module 2 Summary and Module 5 CSR triggers immediate FDA Information Request (IR) or Refuse-to-File.",
+      "auto_remediation": "Sync Module 2.5/2.7 narrative and Table 2.7.3 to N=224 Per-Protocol to match locked CSR dataset."
+    },
+    {
+      "check_id": "XCHK-02",
+      "parameter": "Claimed Shelf-Life & Storage Temperature Range",
+      "source_a_module": "Module 1.14 Draft IFU / Package Insert Labeling",
+      "source_a_value": "24 Months at 15°C–25°C",
+      "source_b_module": "Module 3.2.P.8 Stability Data Package",
+      "source_b_value": "12 Months Real-Time + 6 Months Accelerated (18M supported; 24M table missing)",
+      "status": "FAIL",
+      "severity": "CRITICAL_CRL_RISK",
+      "regulatory_impact": "Labeling shelf-life claim (24M) exceeds validated CMC stability data (18M) in Module 3 — guaranteed CMC Major Deficiency.",
+      "auto_remediation": "Either CMC uploads signed 24M stability report (PKG-CMC-301) or Labeling IFU must step back to 18-month shelf-life."
+    },
+    {
+      "check_id": "XCHK-03",
+      "parameter": "Clinical Trial Lot / Batch Numbers Used in Pivotal Study",
+      "source_a_module": "Module 3.2.P.5.4 Batch Analysis Table",
+      "source_a_value": "Lots #B2026-01, #B2026-02, #B2026-05",
+      "source_b_module": "Module 5.3.5 CSR Appendix 16.1.6 Investigational Device Lot Log",
+      "source_b_value": "Lots #B2026-01, #B2026-02, #B2026-09 (Lot #B2026-09 missing from CMC Module 3)",
+      "status": "FAIL",
+      "severity": "HIGH",
+      "regulatory_impact": "Clinical batch #B2026-09 implanted in 38 patients has no corresponding Certificate of Analysis or impurity profile in Module 3.",
+      "auto_remediation": "Require CMC to append CoA and analytical comparability for Lot #B2026-09 into Module 3.2.P.5.4."
+    },
+    {
+      "check_id": "XCHK-04",
+      "parameter": "Serious Adverse Event (SAE) & Device Malfunction Totals",
+      "source_a_module": "Module 2.7.4 Clinical Safety Summary",
+      "source_a_value": "0 Deaths, 4 Serious Injuries, 9 Device Malfunctions",
+      "source_b_module": "Module 5 CSR Safety Narratives + OpenFDA MAUDE / PSUR Draft",
+      "source_b_value": "0 Deaths, 4 Serious Injuries, 9 Device Malfunctions",
+      "status": "PASS",
+      "severity": "CRITICAL",
+      "regulatory_impact": "100% reconciled across Clinical Summary, CSR narratives, and PSUR vigilance tables.",
+      "auto_remediation": "None required."
+    },
+    {
+      "check_id": "XCHK-05",
+      "parameter": "PRISMA 2020 Literature Screening Arithmetic & DOI Traceability",
+      "source_a_module": "MDR Annex XIV Clinical Evaluation Report (Section 8)",
+      "source_a_value": "42 Identified - 7 Duplicates = 35 Screened -> 12 Included",
+      "source_b_module": "Literature Screening Matrix (.xlsx) & Vancouver Bibliography",
+      "source_b_value": "42 Identified - 7 Duplicates = 35 Screened -> 12 Included (100% DOIs verified)",
+      "status": "PASS",
+      "severity": "HIGH",
+      "regulatory_impact": "Meets MEDDEV 2.7/1 Rev 4 and MDCG 2020-6 mathematical conservation requirements.",
+      "auto_remediation": "None required."
+    },
+    {
+      "check_id": "XCHK-06",
+      "parameter": "eCTD Technical Backbone (PDF/A-1b, Bookmarks, Cross-Document Hyperlinks & 21 CFR Part 11 Signatures)",
+      "source_a_module": "eCTD XML index.xml & Regional m1-regional.xml",
+      "source_a_value": "Requires 0 broken links, PDF v1.4–1.7, and signed Investigator CSR page",
+      "source_b_module": "Pre-Flight Document Scanner",
+      "source_b_value": "CSR signature page missing (PKG-CLIN-501) + 2 broken relative hyperlinks in Module 2.7",
+      "status": "WARN",
+      "severity": "HIGH",
+      "regulatory_impact": "eCTD gateway technical validation warning; unsigned CSR violates ICH E3 / 21 CFR 312.62.",
+      "auto_remediation": "Insert Part 11 signed CSR page and run hyperlink normalizer before sequence publishing."
+    }
+  ],
+  "xchk_counts": {
+    "PASS": 2,
+    "WARN": 1,
+    "FAIL": 3
+  },
+  "guidance_drift_radar": [
+    {
+      "agency": "FDA (CDRH / CDER)",
+      "guidance_code": "FD&C Act Sec. 524B & FDA Cybersecurity in Medical Devices (2023/2025 Final + eSTAR v5)",
+      "change_summary": "Mandates machine-readable SBOM (CycloneDX/SPDX), unresolved CVE justification, and lifecycle vulnerability patch plan as statutory Refuse-to-File (RTF) criteria.",
+      "dossier_status": "GAP_DETECTED",
+      "impacted_module": "Module 4 / eSTAR Cybersecurity Section (PKG-RND-204)",
+      "action_required": "Block FDA eSTAR upload until R&D attaches signed CycloneDX SBOM JSON and CVE patch SLA."
+    },
+    {
+      "agency": "FDA / EMA / MHRA Joint",
+      "guidance_code": "Predetermined Change Control Plan (PCCP) for AI/ML-Enabled Devices (2024/2025)",
+      "change_summary": "Requires explicit retraining boundaries, performance drift triggers, and rollback validation protocol for adaptive/AI-guided algorithms.",
+      "dossier_status": "GAP_DETECTED",
+      "impacted_module": "Software Validation & Algorithm Description (PKG-RND-204)",
+      "action_required": "Add 3-page PCCP retraining boundary appendix from R&D Software team."
+    },
+    {
+      "agency": "EMA / EU Notified Bodies",
+      "guidance_code": "MDCG 2022-21 (PSUR Guidance) & Regulation (EU) 2024/1860 (MDR Transition & EUDAMED)",
+      "change_summary": "Enforces standardized PSUR safety tables, IMDRF adverse event coding, and proactive post-market clinical follow-up (PMCF) gap closure.",
+      "dossier_status": "COMPLIANT",
+      "impacted_module": "MDR Annex III PMS / PSUR Dossier (Automated via pms_monitor.py)",
+      "action_required": "None — automated OpenFDA + ClinicalTrials.gov PSUR tables already meet MDCG 2022-21."
+    },
+    {
+      "agency": "MHRA (United Kingdom)",
+      "guidance_code": "UK Medical Devices (Post-Market Surveillance Requirements) Regulations 2024 (SI 2024/1368)",
+      "change_summary": "Introduces stricter UK-specific serious incident reporting timelines and UKRP trend-reporting rules effective 2025/2026.",
+      "dossier_status": "REVIEW_NEEDED",
+      "impacted_module": "Module 1 Regional UKCA Vigilance SOP",
+      "action_required": "Update UKRP vigilance SOP table to reflect new SI 2024/1368 trend-reporting window."
+    },
+    {
+      "agency": "ICH / Global Harmonisation",
+      "guidance_code": "ICH E6(R3) Good Clinical Practice & ICH M4 (eCTD v4.0 Readiness)",
+      "change_summary": "Elevates risk-based quality management, ALCOA+ electronic data provenance, and data governance across clinical trials.",
+      "dossier_status": "COMPLIANT",
+      "impacted_module": "Module 5 Clinical Data Cleaning & Audit Trail",
+      "action_required": "None — deterministic ALCOA+ cleaning log and Table 1 provenance verified."
+    }
+  ],
+  "drift_counts": {
+    "COMPLIANT": 2,
+    "REVIEW_NEEDED": 1,
+    "GAP_DETECTED": 2
+  },
+  "escalation_chasers": [
+    {
+      "package_id": "PKG-CMC-301",
+      "department": "CMC & Manufacturing",
+      "to_email": "cmc-lead@biomed-internal.example",
+      "subject": "[STATUTORY GATEWAY HOLD] PKG-CMC-301 (eCTD Module 3.2.P / MDR Annex II Sec 3) — 3 Mandatory Items Blocking Filing",
+      "body": "Hi CMC & Manufacturing Lead,\n\nOur automated eCTD/MDR Pre-Flight Gatekeeper ran today (2026-11-10) for SUB-2026-CARDIO-AI-04. While Regulatory Affairs has completed 100% of its gateway shell (0 days overdue), the automated validator placed a statutory hold on eCTD Module 3.2.P / MDR Annex II Sec 3 (PKG-CMC-301: Sterilization Validation & 24-Month Accelerated Stability Batch Analysis) under 21 CFR 314.50(d)(1) / ICH Q1A(R2) / EU MDR Annex II §3.2.\n\n• Current Status: OVERDUE_INCOMPLETE (12 days past SLA due date 2026-10-29; represents 52.2% of total critical-path delay = $540,000 commercial timeline impact).\n• Missing Statutory Artifacts Required to Unlock Gateway: 24m_real_time_stability_table, extractables_leachables_signed_coa, batch_lot_B2026_09_impurity_profile.\n\nSubmitting without these items triggers a 98% probability of an immediate Agency Refuse-to-File (RTF) / Major Deficiency (exposing the company to $4,212,000 in 90-day CRL reset costs). Please upload the missing items to the shared vault so the validator can lift the hold."
+    },
+    {
+      "package_id": "PKG-RND-204",
+      "department": "R&D & Software Engineering",
+      "to_email": "rnd-director@biomed-internal.example",
+      "subject": "[STATUTORY GATEWAY HOLD] PKG-RND-204 (eCTD Module 4 / MDR Annex II Sec 4 (GSPR 17.2 & FDA 524B)) — 3 Mandatory Items Blocking Filing",
+      "body": "Hi R&D & Software Engineering Lead,\n\nOur automated eCTD/MDR Pre-Flight Gatekeeper ran today (2026-11-10) for SUB-2026-CARDIO-AI-04. While Regulatory Affairs has completed 100% of its gateway shell (0 days overdue), the automated validator placed a statutory hold on eCTD Module 4 / MDR Annex II Sec 4 (GSPR 17.2 & FDA 524B) (PKG-RND-204: Cybersecurity SBOM, Penetration Test Closure & AI Algorithm Drift Validation) under FD&C Act Sec. 524B (Cybersecurity) / EU MDR Annex I GSPR 17.2.\n\n• Current Status: LATE_INCOMPLETE (7 days past SLA due date 2026-11-03; represents 30.4% of total critical-path delay = $315,000 commercial timeline impact).\n• Missing Statutory Artifacts Required to Unlock Gateway: cyclonedx_sbom_signed_json, unresolved_cve_remediation_matrix, pccp_ml_retraining_boundary_spec.\n\nSubmitting without these items triggers a 98% probability of an immediate Agency Refuse-to-File (RTF) / Major Deficiency (exposing the company to $4,212,000 in 90-day CRL reset costs). Please upload the missing items to the shared vault so the validator can lift the hold."
+    },
+    {
+      "package_id": "PKG-CLIN-501",
+      "department": "Clinical Operations & Biostatistics",
+      "to_email": "biostats-lead@biomed-internal.example",
+      "subject": "[STATUTORY GATEWAY HOLD] PKG-CLIN-501 (eCTD Module 5.3.5 / MDR Annex XIV Clinical Evaluation (CER)) — 2 Mandatory Items Blocking Filing",
+      "body": "Hi Clinical Operations & Biostatistics Lead,\n\nOur automated eCTD/MDR Pre-Flight Gatekeeper ran today (2026-11-10) for SUB-2026-CARDIO-AI-04. While Regulatory Affairs has completed 100% of its gateway shell (0 days overdue), the automated validator placed a statutory hold on eCTD Module 5.3.5 / MDR Annex XIV Clinical Evaluation (CER) (PKG-CLIN-501: Pivotal Trial NCT05892104 Final CSR & Locked Statistical Table 1 / AE Line Listings) under ICH E3 / ICH E6(R3) / 21 CFR Part 11 / EU MDR Annex XIV.\n\n• Current Status: LATE_MISMATCH (4 days past SLA due date 2026-11-06; represents 17.4% of total critical-path delay = $180,000 commercial timeline impact).\n• Missing Statutory Artifacts Required to Unlock Gateway: pi_wet_or_part11_electronic_signature_page, reconciled_sae_patient_count_vs_module2.\n\nSubmitting without these items triggers a 98% probability of an immediate Agency Refuse-to-File (RTF) / Major Deficiency (exposing the company to $4,212,000 in 90-day CRL reset costs). Please upload the missing items to the shared vault so the validator can lift the hold."
+    }
+  ],
+  "spider_web_verticals": [
+    {
+      "node_id": "HUB-01 (Core)",
+      "domain": "MedTech, Pharma & Biotech Regulatory Affairs Automation (RegTech / eCTD / MDR)",
+      "high_pay_roles": "Regulatory Operations Python Engineer, Clinical Data & eCTD Automation Architect, AI/SaMD Regulatory Lead",
+      "comp_range_usd_chf": "$135,000 – $230,000 (US/CH) | €95,000 – €160,000 (EU)",
+      "how_your_repos_solve_it": "Automates eCTD M1–M5 cross-checks, upstream R&D/CMC SLA gatekeeping, PRISMA 2020 CER tables, and OpenFDA/ClinicalTrials.gov PSUR reports.",
+      "existing_repo_link": "medtech-regulatory-compliance-suite + pms-clinicaltrials-openfda-monitor + computational-biology-portfolio"
+    },
+    {
+      "node_id": "SPOKE-02 (Closest Medical-to-Tech Jump)",
+      "domain": "AI Governance, EU AI Act Annex IV & Model Risk Management (MRM)",
+      "high_pay_roles": "AI Governance & Compliance Engineer, Model Risk Auditor (SR 11-7 / ISO 42001), Responsible AI Architect",
+      "comp_range_usd_chf": "$160,000 – $320,000+ (Banks, Big Tech, AI Labs)",
+      "how_your_repos_solve_it": "EU AI Act Annex IV Technical Documentation was directly modeled on EU MDR medical device files! Your cross-check linter & drift radar audit LLM/ML drift, bias tables, and training provenance.",
+      "existing_repo_link": "ra_operations_command_center.py (--vertical ai_governance) + sentinel-compliance-auditor"
+    },
+    {
+      "node_id": "SPOKE-03 (Highest Total Cash Compensation)",
+      "domain": "Quantitative Finance, Hedge Fund Model Validation & FinTech RegTech (EU DORA / SEC)",
+      "high_pay_roles": "Quant Risk & Compliance Python Developer, Model Validation Quant (SR 11-7), DORA / Algorithmic Trading Auditor",
+      "comp_range_usd_chf": "$180,000 – $500,000+ (Total Comp in Quant Funds / Tier-1 Banks)",
+      "how_your_repos_solve_it": "Reuses your SciPy-free statistical validation (Welch t / Chi-square), upstream data-feed SLA gatekeeper, and passive edge security scanner for DORA ICT risk compliance.",
+      "existing_repo_link": "computational-biology-portfolio (statistical engine) + sentinel-compliance-auditor + ra_operations_command_center.py (--vertical fintech_dora)"
+    },
+    {
+      "node_id": "SPOKE-04 (Fastest B2B Consulting Demand)",
+      "domain": "Cybersecurity Posture, DevSecOps & Privacy Compliance-as-Code (GDPR / nFADP / NIS2 / SOC2)",
+      "high_pay_roles": "Compliance-as-Code Engineer, GRC Automation Architect, Cloud Security Posture (CSPM) Engineer",
+      "comp_range_usd_chf": "$145,000 – $250,000 | High-margin B2B retainers (€350–€1,500/audit)",
+      "how_your_repos_solve_it": "Directly powered by your 25-control passive Sentinel engine (DMARC, HSTS, CSP, TLS, Google Fonts GDPR leaks, WCAG) plus automated Nginx/Cloudflare remediation configs.",
+      "existing_repo_link": "sentinel-compliance-auditor + medtech-regulatory-compliance-suite"
+    },
+    {
+      "node_id": "SPOKE-05 (Corporate Supply-Chain Mandate)",
+      "domain": "ESG, EU CSRD & Scope 1-2-3 Carbon Supply-Chain Data Gatekeeping",
+      "high_pay_roles": "ESG Data Engineering Lead, Climate & CSRD Reporting Automation Architect",
+      "comp_range_usd_chf": "$130,000 – $220,000 (Multinationals, Big 4, Private Equity)",
+      "how_your_repos_solve_it": "Just like RA chases R&D and CMC for lab batches, ESG teams chase 200+ factories for carbon data. Your Upstream SLA Gatekeeper & Cross-Check Linter automates CSRD audit trails.",
+      "existing_repo_link": "ra_operations_command_center.py (--vertical esg_csrd)"
+    },
+    {
+      "node_id": "SPOKE-06 (Bio-AI & Computational Drug Discovery)",
+      "domain": "Translational Bioinformatics, Clinical Trial Data Science & CDISC/ADaM Automation",
+      "high_pay_roles": "Clinical Data Scientist, Bioinformatics Pipeline Engineer, Statistical Programmer (Python/CDISC)",
+      "comp_range_usd_chf": "$140,000 – $240,000 (Pharma, Biotech, Global CROs)",
+      "how_your_repos_solve_it": "Uses your NCBI CFTR sequence QC, CDISC-style clinical cohort cleaning, automated Table 1 generation, and PubMed/OpenFDA API harvesters.",
+      "existing_repo_link": "computational-biology-portfolio + pms-clinicaltrials-openfda-monitor"
+    }
+  ]
+}
