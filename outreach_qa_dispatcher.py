@@ -740,6 +740,56 @@ def resolve_smtp_settings(provider: str) -> tuple[str, int]:
     return os.environ.get("SMTP_HOST", ""), int(os.environ.get("SMTP_PORT", "587"))
 
 
+def load_suppression_records(
+    suppression_csv: Path | None,
+    now_utc: dt.datetime | None = None,
+) -> tuple[dict[str, str], dict[str, str]]:
+    """
+    Load active permanent suppressions (opt-outs, unrecoverable bounces, health pauses)
+    and active temporary cooldown holds from `optout_suppression.csv`.
+
+    Supports an optional `scope` column (`domain` | `email`, defaulting to `domain` when
+    omitted or empty) and an optional `hold_until_utc` ISO-8601 timestamp column.
+    Rows with `hold_until_utc <= now_utc` are treated as expired holds.
+    """
+    sup_domains: dict[str, str] = {}
+    sup_emails: dict[str, str] = {}
+    if not suppression_csv or not suppression_csv.is_file():
+        return sup_domains, sup_emails
+
+    ref_now = now_utc or dt.datetime.now(dt.timezone.utc)
+    with open(suppression_csv, "r", encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            dom = (row.get("domain") or "").strip().lower()
+            em = (row.get("email") or "").strip().lower()
+            reason = (row.get("reason") or "SUPPRESSED").strip()
+            scope = (row.get("scope") or "").strip().lower()
+            hold_until_raw = (row.get("hold_until_utc") or "").strip()
+
+            if hold_until_raw:
+                try:
+                    hold_dt = dt.datetime.fromisoformat(hold_until_raw.replace("Z", "+00:00"))
+                    if hold_dt.tzinfo is None:
+                        hold_dt = hold_dt.replace(tzinfo=dt.timezone.utc)
+                    if hold_dt <= ref_now:
+                        continue
+                except ValueError:
+                    pass
+
+            if not scope:
+                scope = "email" if (em and not dom) else "domain"
+
+            if scope == "email":
+                if em:
+                    sup_emails[em] = reason
+            else:
+                if dom:
+                    sup_domains[dom] = reason
+                if em:
+                    sup_emails[em] = reason
+    return sup_domains, sup_emails
+
+
 def process_dispatch_queue(
     manifest_csv: Path,
     out_dir: Path,
@@ -749,6 +799,7 @@ def process_dispatch_queue(
     threshold_pct: float = 15.0,
     max_send_per_run: int = 40,
     confirm_send: bool = False,
+    suppression_csv: Path | None = None,
 ) -> dict[str, Any]:
     """Run single-pass humanizer + strict 120–150w QA gate on every lead in `manifest_csv`."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -764,6 +815,9 @@ def process_dispatch_queue(
     ledger_path = out_dir / "sent_ledger.csv"
     qa_report_csv = out_dir / "qa_detector_report.csv"
     utf8_json_path = out_dir / "approved_emails_utf8.json"
+
+    sup_path = suppression_csv if suppression_csv is not None else (out_dir / "optout_suppression.csv")
+    sup_domains, sup_emails = load_suppression_records(sup_path)
 
     already_sent: set[str] = set()
     if ledger_path.exists():
@@ -788,6 +842,27 @@ def process_dispatch_queue(
         problem_solved = row.get("problem_solved", "").strip()
         price_str = row.get("price", "").strip()
         evidence_json = Path(row["evidence_json_path"].strip())
+
+        sup_reason = sup_emails.get(to_email.lower()) or sup_domains.get(domain.lower())
+        if sup_reason:
+            qa_results.append({
+                "domain": domain,
+                "to_email": to_email,
+                "lang": lang,
+                "status": "BLOCKED_SUPPRESSED",
+                "word_count": 0,
+                "avg_ai_pct": 0.0,
+                "d1_cliche": 0.0,
+                "d2_burstiness": 0.0,
+                "d3_syntactic": 0.0,
+                "d4_boilerplate": 0.0,
+                "passes_used": 0,
+                "professionalism_ok": False,
+                "professionalism_issues": f"Suppressed/Cooldown: {sup_reason}",
+                "eml_draft": "",
+                "attachments": "",
+            })
+            continue
 
         attachments: list[Path] = []
         if row.get("attachment_path", "").strip():
@@ -971,6 +1046,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--threshold", type=float, default=15.0, help="Max allowed average AI detector % (default: 15.0)")
     parser.add_argument("--max-send", type=int, default=40, help="Safety cap per SMTP run (default: 40)")
     parser.add_argument("--confirm-send", action="store_true", help="Required confirmation flag when --dispatch smtp is active")
+    parser.add_argument("--suppression-csv", default="", help="Optional optout_suppression.csv path (defaults to <output-dir>/optout_suppression.csv if present)")
     args = parser.parse_args(argv)
 
     summary = process_dispatch_queue(
@@ -982,6 +1058,7 @@ def main(argv: list[str] | None = None) -> int:
         threshold_pct=args.threshold,
         max_send_per_run=args.max_send,
         confirm_send=args.confirm_send,
+        suppression_csv=Path(args.suppression_csv) if args.suppression_csv else None,
     )
     print(json.dumps({k: v for k, v in summary.items() if k != "results"}, indent=2, default=str))
     for r in summary["results"]:

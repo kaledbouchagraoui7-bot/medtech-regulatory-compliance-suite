@@ -178,6 +178,46 @@ class TestOutreachQADispatcher(unittest.TestCase):
             self.assertEqual(res["sent_via_smtp"], 1)
             mock_srv.send_message.assert_called_once()
 
+    def test_suppression_csv_blocks_optout_and_respects_email_scope_and_expired_holds(self) -> None:
+        ev_json = self.temp_dir / "ev.json"
+        ev_json.write_text(json.dumps(self.sample_audit), encoding="utf-8")
+        ev_mhlab = self.temp_dir / "ev_mhlab.json"
+        ev_mhlab.write_text(json.dumps({**self.sample_audit, "domain": "mhlab.ca"}), encoding="utf-8")
+        fake_png = self.temp_dir / "scorecard.png"
+        fake_png.write_bytes(b"\x89PNG\r\n\x1a\nfakepng")
+
+        sup_csv = self.temp_dir / "optout_suppression.csv"
+        with open(sup_csv, "w", encoding="utf-8", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(["timestamp_utc", "domain", "email", "reason", "source_message_id", "scope", "hold_until_utc"])
+            # Domain-level permanent opt-out
+            w.writerow(["2026-11-10T06:24:35Z", "optout-dom.de", "no@optout-dom.de", "OPT_OUT: Nein danke", "m1", "domain", ""])
+            # Email-level bounce only (should NOT block alternate address on same domain)
+            w.writerow(["2026-11-10T14:39:33Z", "mhlab.ca", "info@mhlab.ca", "AUTO_NO_REPLY_ALT_AVAILABLE", "m2", "email", ""])
+            # Active future hold
+            w.writerow(["2026-11-10T14:32:59Z", "pureclinic.ch", "info@pureclinic.ch", "HOLD_AUTO_ACK_7D", "m3", "domain", "2099-01-01T00:00:00Z"])
+            # Expired hold (must be lifted automatically)
+            w.writerow(["2026-11-01T10:00:00Z", "treuhand-demo.ch", "info@treuhand-demo.ch", "HOLD_OOO_EXPIRED", "m4", "domain", "2020-01-01T00:00:00Z"])
+
+        manifest = self.temp_dir / "manifest.csv"
+        with open(manifest, "w", encoding="utf-8", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(["domain", "company_name", "to_email", "lang", "country", "sector", "price", "evidence_json_path", "attachment_path"])
+            w.writerow(["optout-dom.de", "OptOut GmbH", "other@optout-dom.de", "en", "DE", "cpa_fiduciary", "EUR 350", str(ev_json), str(fake_png)])
+            w.writerow(["mhlab.ca", "Med-Health Labs", "info@mhlab.ca", "en", "CA", "diagnostics_lab", "CAD 460", str(ev_mhlab), str(fake_png)])
+            w.writerow(["mhlab.ca", "Med-Health Labs", "support@mhlab.ca", "en", "CA", "diagnostics_lab", "CAD 460", str(ev_mhlab), str(fake_png)])
+            w.writerow(["pureclinic.ch", "Pure Clinic", "info@pureclinic.ch", "de", "CH", "clinic", "350 CHF", str(ev_json), str(fake_png)])
+            w.writerow(["treuhand-demo.ch", "Treuhand Demo", "info@treuhand-demo.ch", "en", "CH", "cpa_fiduciary", "350 CHF", str(ev_json), str(fake_png)])
+
+        res = process_dispatch_queue(manifest, self.temp_dir / "q_sup", dispatch_mode="draft", suppression_csv=sup_csv)
+        statuses = {(r["domain"], r["to_email"]): r["status"] for r in res["results"]}
+        self.assertEqual(statuses[("optout-dom.de", "other@optout-dom.de")], "BLOCKED_SUPPRESSED")
+        self.assertEqual(statuses[("mhlab.ca", "info@mhlab.ca")], "BLOCKED_SUPPRESSED")
+        self.assertEqual(statuses[("mhlab.ca", "support@mhlab.ca")], "APPROVED")
+        self.assertEqual(statuses[("pureclinic.ch", "info@pureclinic.ch")], "BLOCKED_SUPPRESSED")
+        self.assertEqual(statuses[("treuhand-demo.ch", "info@treuhand-demo.ch")], "APPROVED")
+        self.assertEqual(res["approved_count"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()

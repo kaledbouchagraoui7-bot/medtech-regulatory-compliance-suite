@@ -10,7 +10,7 @@ from __future__ import annotations
 import html
 from pathlib import Path
 
-from editorial_renderer import render_html_to_pdf_and_png
+from editorial_renderer import _SENTINEL_HEADER_SVG, render_html_to_pdf_and_png
 from outreach_qa_dispatcher import apply_humanizer_pass, evaluate_4_detectors
 
 
@@ -122,6 +122,15 @@ def build_evaluation_system_pdf(out_pdf: Path, out_png: Path | None = None) -> P
     justify-content: space-between;
     align-items: flex-end;
   }}
+  .header-brand {{
+    display: flex;
+    align-items: center;
+    gap: 13px;
+  }}
+  .brand-mark {{
+    flex: 0 0 auto;
+    line-height: 0;
+  }}
   .eyebrow {{
     font-size: 10px;
     letter-spacing: 1.6px;
@@ -133,15 +142,17 @@ def build_evaluation_system_pdf(out_pdf: Path, out_png: Path | None = None) -> P
   h1 {{
     margin: 0;
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     color: #0F172A;
+    white-space: nowrap;
   }}
   .meta {{
     text-align: right;
     font-size: 10.5px;
     color: #4B5563;
     line-height: 1.45;
+    white-space: nowrap;
   }}
   .lead {{
     margin: 12px 0 14px 0;
@@ -221,9 +232,12 @@ def build_evaluation_system_pdf(out_pdf: Path, out_png: Path | None = None) -> P
 <body>
   <div>
     <div class="header">
-      <div>
-        <div class="eyebrow">Technical Evaluation Methodology &amp; Deliverable Specification</div>
-        <h1>Sentinel 25-Control Passive Assessment Framework</h1>
+      <div class="header-brand">
+        <div class="brand-mark">{_SENTINEL_HEADER_SVG}</div>
+        <div>
+          <div class="eyebrow">Sentinel &middot; Technical Evaluation Methodology &amp; Deliverable Specification</div>
+          <h1>Sentinel 25-Control Passive Assessment Framework</h1>
+        </div>
       </div>
       <div class="meta">
         <div><strong>Author:</strong> Kaled Bouchagraoui</div>

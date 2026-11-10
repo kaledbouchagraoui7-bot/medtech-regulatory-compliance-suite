@@ -10,8 +10,8 @@ Thumbs.db
 output/
 live_targets_output/
 outreach_queue/
-private_outreach_queue/
-private_outreach_queue_intl/
+private_outreach_queue*/
+recovery_queue/
 *.eml
 sent_ledger.csv
 
