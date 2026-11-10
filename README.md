@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/sentinel_logo_full.png" alt="Sentinel — MedTech, Privacy & Regulatory Suite" width="760" />
+</div>
+
 # Unified MedTech, CRO & Digital Health Regulatory Compliance Suite
 
 **End-to-End Automation for (1) External Digital Privacy, DMARC & Edge Cybersecurity (Swiss nFADP / EU GDPR / EU MDR Annex I GSPR 17.2) and (2) Clinical Evaluation Literature & PRISMA 2020 Evidence Synthesis (EU MDR Annex XIV / MEDDEV 2.7/1 Rev 4).**
