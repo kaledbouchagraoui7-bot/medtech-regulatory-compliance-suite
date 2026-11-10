@@ -16,8 +16,11 @@ import shutil
 import subprocess
 import tempfile
 import textwrap
+import threading
 from pathlib import Path
 from typing import Any
+
+_EDGE_RENDER_LOCK = threading.Lock()
 
 
 def find_headless_browser() -> str | None:
@@ -55,44 +58,58 @@ def render_html_to_pdf_and_png(
         html_file = tmp_dir / "brief.html"
         html_file.write_text(html_content, encoding="utf-8")
         file_uri = html_file.as_uri()
+        profile_dir = tmp_dir / "edge_profile"
 
-        if pdf_path is not None:
-            pdf_path.parent.mkdir(parents=True, exist_ok=True)
-            subprocess.run(
-                [
-                    browser,
-                    "--headless=new",
-                    "--disable-gpu",
-                    "--no-sandbox",
-                    "--no-pdf-header-footer",
-                    f"--print-to-pdf={pdf_path.resolve()}",
-                    file_uri,
-                ],
-                capture_output=True,
-                timeout=30,
-                check=False,
-            )
+        with _EDGE_RENDER_LOCK:
+            if pdf_path is not None:
+                pdf_path.parent.mkdir(parents=True, exist_ok=True)
+                subprocess.run(
+                    [
+                        browser,
+                        "--headless=new",
+                        "--disable-gpu",
+                        "--no-sandbox",
+                        "--no-first-run",
+                        "--disable-extensions",
+                        "--disable-background-networking",
+                        "--run-all-compositor-stages-before-draw",
+                        "--virtual-time-budget=2000",
+                        f"--user-data-dir={profile_dir}",
+                        "--no-pdf-header-footer",
+                        f"--print-to-pdf={pdf_path.resolve()}",
+                        file_uri,
+                    ],
+                    capture_output=True,
+                    timeout=30,
+                    check=False,
+                )
 
-        if png_path is not None:
-            png_path.parent.mkdir(parents=True, exist_ok=True)
-            subprocess.run(
-                [
-                    browser,
-                    "--headless=new",
-                    "--disable-gpu",
-                    "--no-sandbox",
-                    "--hide-scrollbars",
-                    "--force-device-scale-factor=2",
-                    f"--window-size={width_px},{height_px}",
-                    f"--screenshot={png_path.resolve()}",
-                    file_uri,
-                ],
-                capture_output=True,
-                timeout=30,
-                check=False,
-            )
+            if png_path is not None:
+                png_path.parent.mkdir(parents=True, exist_ok=True)
+                subprocess.run(
+                    [
+                        browser,
+                        "--headless=new",
+                        "--disable-gpu",
+                        "--no-sandbox",
+                        "--no-first-run",
+                        "--disable-extensions",
+                        "--disable-background-networking",
+                        "--run-all-compositor-stages-before-draw",
+                        "--virtual-time-budget=2000",
+                        f"--user-data-dir={profile_dir}",
+                        "--hide-scrollbars",
+                        "--force-device-scale-factor=2",
+                        f"--window-size={width_px},{height_px}",
+                        f"--screenshot={png_path.resolve()}",
+                        file_uri,
+                    ],
+                    capture_output=True,
+                    timeout=30,
+                    check=False,
+                )
         pdf_ok = True if pdf_path is None else (pdf_path.exists() and pdf_path.stat().st_size > 2000)
-        png_ok = True if png_path is None else (png_path.exists() and png_path.stat().st_size > 5000)
+        png_ok = True if png_path is None else (png_path.exists() and png_path.stat().st_size > 65000)
         return pdf_ok and png_ok
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
