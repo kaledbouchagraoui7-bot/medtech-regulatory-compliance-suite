@@ -150,10 +150,25 @@ class TestLegalAndClientOps(unittest.TestCase):
         self.assertEqual(wb.sheetnames, ["README"])
         self.assertGreater(ws.max_row, 5)
 
-        # Static HTML deployment bundle (Storefront + EN Terms + FR CGV + Privacy + Security Headers)
+        # Static HTML deployment bundle (Storefront + EN Terms + FR CGV + Privacy + SEO + Samples + Security Headers)
         site_dir = self.temp_dir / "site"
         assets = build_legal_web_pages(site_dir, cfg)
-        for key in ("index_html", "terms_html", "cgv_html", "privacy_html", "terms_txt", "headers", "nojekyll", "robots_txt", "security_txt"):
+        for key in (
+            "index_html",
+            "terms_html",
+            "cgv_html",
+            "privacy_html",
+            "terms_txt",
+            "headers",
+            "nojekyll",
+            "robots_txt",
+            "security_txt",
+            "nfadp_audit_html",
+            "eu_mdr_psur_html",
+            "prisma_2020_html",
+            "sitemap_xml",
+            "samples_dir",
+        ):
             self.assertIn(key, assets)
             self.assertTrue(assets[key].exists(), f"Missing generated web asset: {key}")
 
@@ -173,6 +188,15 @@ class TestLegalAndClientOps(unittest.TestCase):
         self.assertIn("PRISMA 2020", idx_txt)
         self.assertIn("OpenFDA MAUDE", idx_txt)
         self.assertIn('id="specimen-inspector"', idx_txt)
+        self.assertIn('id="live-check"', idx_txt)
+        self.assertIn("runDnsPrecheck()", idx_txt)
+        self.assertIn("runFdaPrecheck()", idx_txt)
+        self.assertIn("runEpmcPrecheck()", idx_txt)
+        self.assertIn("openGmailWebCompose()", idx_txt)
+        self.assertIn("copyScopeBrief()", idx_txt)
+        self.assertIn("samples/sentinel_swiss_sme_sample.zip", idx_txt)
+        self.assertIn("samples/prisma_glp1_clinical_sample.zip", idx_txt)
+        self.assertIn("nfadp-audit.html", idx_txt)
         self.assertIn("selectSpecimenTab('t1')", idx_txt)
         self.assertIn('id="spec-panel-t4"', idx_txt)
         self.assertIn("ALCOA_PROVENANCE_MANIFEST.json", idx_txt)
@@ -180,6 +204,15 @@ class TestLegalAndClientOps(unittest.TestCase):
         self.assertNotIn("fonts.googleapis.com", idx_txt)
         self.assertNotIn("GenevaOS", idx_txt)
         self.assertNotIn("`.docx`", idx_txt)
+
+        hdr_txt = assets["headers"].read_text(encoding="utf-8")
+        self.assertIn("https://dns.google https://api.fda.gov https://www.ebi.ac.uk", hdr_txt)
+        robots_txt = assets["robots_txt"].read_text(encoding="utf-8")
+        self.assertIn("Sitemap:", robots_txt)
+        sitemap_txt = assets["sitemap_xml"].read_text(encoding="utf-8")
+        self.assertIn("nfadp-audit.html", sitemap_txt)
+        self.assertIn("eu-mdr-psur.html", sitemap_txt)
+        self.assertIn("prisma-2020.html", sitemap_txt)
 
     def test_client_ops_lifecycle_sentinel_and_safety_gates(self) -> None:
         cfg_file = self.temp_dir / "client_ops_config.json"

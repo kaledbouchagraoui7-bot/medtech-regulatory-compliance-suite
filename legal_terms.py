@@ -577,7 +577,7 @@ def build_legal_web_pages(
         "  X-Frame-Options: SAMEORIGIN\n"
         "  Referrer-Policy: strict-origin-when-cross-origin\n"
         "  Permissions-Policy: camera=(), microphone=(), geolocation=()\n"
-        "  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self' https://tally.so mailto:;\n",
+        "  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://dns.google https://api.fda.gov https://www.ebi.ac.uk; base-uri 'self'; form-action 'self' https://tally.so https://mail.google.com mailto:;\n",
         encoding="utf-8",
     )
 

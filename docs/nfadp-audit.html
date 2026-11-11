@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swiss nFADP, EU GDPR &amp; DMARC/SPF 25-Control External Audit &mdash; Sentinel Regulatory &amp; Technical Operations</title>
+  <meta name="description" content="Passive DNS/DMARC (&gt;10 SPF lookup cap), MTA-STS, Google Fonts IP leak (nFADP/GDPR Art. 44), CMP Reject symmetry, and edge TLS/CSP posture audit in 48h for CH and FR MedTech firms." />
+  <link rel="canonical" href="https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/nfadp-audit.html" />
+  <style>
+    :root { --navy:#0F172A; --teal:#0F766E; --slate:#F8FAFC; --border:#E2E8F0; --muted:#475569; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--slate); color:var(--navy); line-height:1.6; }
+    .lang-fr, div.lang-fr, ul.lang-fr, p.lang-fr { display:none; }
+    body.is-fr .lang-en, body.is-fr div.lang-en, body.is-fr ul.lang-en, body.is-fr p.lang-en { display:none; }
+    body.is-fr .lang-fr { display:inline; }
+    body.is-fr div.lang-fr, body.is-fr ul.lang-fr, body.is-fr p.lang-fr { display:block; }
+    header { background:#FFF; border-bottom:1px solid var(--border); padding:14px 24px; }
+    .nav { max-width:960px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+    .nav a { color:var(--navy); text-decoration:none; font-weight:700; font-size:14px; }
+    .nav-links { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+    .lang-btn { border:1px solid var(--border); background:var(--slate); padding:5px 10px; border-radius:4px; font-weight:700; cursor:pointer; }
+    main { max-width:960px; margin:34px auto; padding:0 20px; }
+    .card { background:#FFF; border:1px solid var(--border); border-top:4px solid var(--teal); border-radius:6px; padding:28px; }
+    .eyebrow { font-size:11.5px; font-weight:700; letter-spacing:1.3px; text-transform:uppercase; color:var(--teal); margin-bottom:8px; }
+    h1 { font-family:Georgia,serif; font-size:clamp(25px,3.2vw,34px); line-height:1.2; margin:0 0 12px 0; }
+    .lead { color:var(--muted); font-size:16px; margin:0 0 22px 0; }
+    .card ul { padding-left:20px; margin:0 0 24px 0; }
+    .card li { margin-bottom:9px; color:#1E293B; }
+    .actions { display:flex; gap:12px; flex-wrap:wrap; }
+    .btn-primary { background:var(--teal); color:#FFF; padding:11px 18px; border-radius:6px; text-decoration:none; font-weight:700; font-size:14px; }
+    .btn-outline { background:#FFF; color:var(--navy); border:1px solid var(--border); padding:11px 18px; border-radius:6px; text-decoration:none; font-weight:700; font-size:14px; }
+    footer { max-width:960px; margin:24px auto 40px auto; padding:0 20px; font-size:13px; color:var(--muted); }
+    footer a { color:var(--teal); text-decoration:none; font-weight:600; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="nav" aria-label="Guide Navigation">
+      <a href="index.html">&larr; Sentinel Regulatory &amp; Technical Operations</a>
+      <div class="nav-links">
+        <a href="nfadp-audit.html">nFADP / GDPR</a>
+        <a href="eu-mdr-psur.html">EU MDR PSUR</a>
+        <a href="prisma-2020.html">PRISMA 2020</a>
+        <a href="terms.html">Terms</a>
+        <a href="cgv.html">CGV</a>
+        <button type="button" class="lang-btn" onclick="var f=!document.body.classList.contains('is-fr');document.body.classList.toggle('is-fr',f);this.textContent=f?'EN':'FR';">FR</button>
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article class="card">
+      <div class="eyebrow">Track 01 · Switzerland nFADP/nLPD &amp; France CNIL/RGPD · EUR 350–450 / CHF 350</div>
+      <h1><span class="lang-en">Swiss nFADP, EU GDPR &amp; DMARC/SPF 25-Control External Audit</span><span class="lang-fr">Audit Externe nLPD Suisse, RGPD France &amp; DMARC/SPF 25 Contrôles</span></h1>
+      <p class="lead lang-en">Built for MedTech, Diagnostics, Biotech, and regulated B2B firms across Geneva, Vaud, Zurich, Basel, Paris, Lyon, and Strasbourg needing verifiable public-posture evidence without invasive scanning.</p>
+      <p class="lead lang-fr">Conçu pour les entreprises MedTech, Diagnostic et B2B régulées en Suisse romande/alémanique et en France (Paris, Lyon, Strasbourg, Grenoble) exigeant une preuve passive conforme.</p>
+      <ul class="lang-en"><li><strong>100% Passive StGB Art. 143bis / Art. 323-1 CP Posture:</strong> Zero intrusive probing or port scanning; checks only public DNS TXT records, HTTPS headers, and initial DOM requests.</li><li><strong>RFC 7208 Recursive SPF Lookup Cap &amp; MTA-STS:</strong> Detects hidden SPF &gt;10 lookup PermError breakage plus DMARC/DKIM alignment gaps before enterprise buyer emails bounce.</li><li><strong>Swiss nFADP Art. 8/19 &amp; EU GDPR Art. 44 IP Leaks:</strong> Identifies unconsented third-party US font/tracker calls and asymmetric cookie banners prior to vendor QA or CNIL/FDPIC scrutiny.</li><li><strong>Turnkey Nginx, Cloudflare _headers &amp; DNS Configs:</strong> Delivered within 48h alongside a landscape Word audit, 4-sheet Excel risk matrix, 300-DPI scorecard, and 14-day re-scan.</li></ul>
+      <ul class="lang-fr"><li><strong>100% Passif (nLPD Suisse / Art. 323-1 CP) :</strong> Aucun scan intrusif : analyse uniquement des champs DNS publics, en-têtes HTTPS et requêtes DOM initiales.</li><li><strong>Détection Plafond 10 Requêtes SPF &amp; MTA-STS :</strong> Repère les échecs cachés PermError (&gt;10 recherches DNS SPF) et lacunes DMARC avant rejet antispam chez vos clients.</li><li><strong>Fuites IP Tiers &amp; Bannières Cookies RGPD / nLPD :</strong> Signale les polices US chargées sans consentement et les bandeaux cookies sans bouton de refus au premier niveau.</li><li><strong>Correctifs Prêts à Poser Sous 48h :</strong> Rapport Word exécutif, matrice Excel 4 onglets, scorecard 300 DPI, fichiers DNS/Nginx/Cloudflare et re-contrôle inclus.</li></ul>
+      <div class="actions">
+        <a class="btn-primary" href="index.html#intake"><span class="lang-en">Request Free 1-Page Scope Preview</span><span class="lang-fr">Demander un Aper&ccedil;u Gratuit (1 Page)</span></a>
+        <a class="btn-outline" href="samples/sentinel_swiss_sme_sample.zip" download><span class="lang-en">&#8595; Download Redacted Track 01 Sample ZIP</span><span class="lang-fr">&#8595; Télécharger l&#x27;Exemple ZIP Module 01</span></a>
+      </div>
+    </article>
+  </main>
+  <footer>
+    <span>Contact: <a href="mailto:kaledbouchagraoui7@gmail.com">kaledbouchagraoui7@gmail.com</a> &middot; <a href="privacy.html">Privacy (GDPR / nFADP)</a> &middot; <a href="sitemap.xml">Sitemap</a></span>
+  </footer>
+</body>
+</html>

@@ -1,2 +1,3 @@
 User-agent: *
 Allow: /
+Sitemap: https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/sitemap.xml
