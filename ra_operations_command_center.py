@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ra_operations_command_center.py — Regulatory Affairs (RA) 5-Painkiller Command Center
+ra_operations_command_center.py — Regulatory Affairs (RA) Operations Command Center
 & Cross-Industry "Spider-Web" Compliance-as-Code Engine
 =====================================================================================
 
@@ -40,9 +40,14 @@ import argparse
 import json
 import re
 import sys
+import textwrap
 import zipfile
 from pathlib import Path
 from typing import Any
+
+_SCRIPT_DIR = Path(__file__).resolve().parent
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
 
 import matplotlib
 matplotlib.use("Agg")
@@ -180,7 +185,7 @@ def evaluate_ra_submission_state(state: dict[str, Any]) -> dict[str, Any]:
                 "completeness_pct": int(p.get("completeness_pct", 0)),
                 "missing_count": len(missing),
                 "missing_fields": missing,
-                "statutory_citation": p.get("statutory_citation") or p.get("statutory_ citation", "ICH M4 / EU MDR"),
+                "statutory_citation": p.get("statutory_citation") or "ICH M4 / EU MDR",
                 "rtf_blocker": bool(p.get("rtf_or_crl_blocker", False)),
             }
         )
@@ -322,8 +327,9 @@ def generate_ra_dashboard_chart(report: dict[str, Any], out_png: Path, out_pdf: 
             height_px=780,
         ):
             return
-    except Exception:
-        pass
+        print("[ra_operations_command_center] Warning: editorial_renderer returned False; using Matplotlib fallback.", file=sys.stderr)
+    except Exception as exc:
+        print(f"[ra_operations_command_center] Warning: editorial_renderer raised {exc}; using Matplotlib fallback.", file=sys.stderr)
 
     out_png.parent.mkdir(parents=True, exist_ok=True)
     fig, axes = plt.subplots(2, 2, figsize=(14.0, 8.8), dpi=300)
@@ -354,16 +360,16 @@ def generate_ra_dashboard_chart(report: dict[str, Any], out_png: Path, out_pdf: 
     days = [d["overdue_days"] for d in report["dept_delay_summary"]]
     colors1 = ["#DC2626" if d > 7 else ("#D97706" if d > 0 else "#16A34A") for d in days]
     bars1 = ax1.barh(depts, days, color=colors1, height=0.55, edgecolor="#1E293B", linewidth=0.7)
-    ax1.set_title("1. Painkiller #1: Critical-Path Delay Attribution (Days Overdue)", fontsize=10, fontweight="bold", color="#0F172A")
+    ax1.set_title("1. Critical-Path Delay Attribution (Days Overdue)", fontsize=10, fontweight="bold", color="#0F172A")
     ax1.set_xlabel("Overdue Days Blocking Submission", fontsize=8.5)
     ax1.invert_yaxis()
-    ax1.set_xlim(0, max(days + [10]) * 1.28)
+    ax1.set_xlim(0, max(days + [10]) * 1.85)
     for bar, d_obj in zip(bars1, report["dept_delay_summary"]):
         w = bar.get_width()
         lbl = f" {w}d ({d_obj['delay_share_pct']}%) — {d_obj['completeness_pct']}% complete"
-        ax1.text(w + 0.2, bar.get_y() + bar.get_height() / 2, lbl, va="center", fontsize=7.8, fontweight="bold", color="#1E293B")
+        ax1.text(w + 0.25, bar.get_y() + bar.get_height() / 2, lbl, va="center", fontsize=7.6, fontweight="bold", color="#1E293B")
 
-    # Panel 2 (Top-Right): eCTD Modules 1–5 Cross-Check Linter
+    # Panel 2 (Top-Right): eCTD Modules 1-5 Cross-Check Linter
     ax2 = axes[0, 1]
     ax2.set_facecolor("#FFFFFF")
     xc = report["xchk_counts"]
@@ -371,7 +377,7 @@ def generate_ra_dashboard_chart(report: dict[str, Any], out_png: Path, out_pdf: 
     vals2 = [xc["PASS"], xc["WARN"], xc["FAIL"]]
     cols2 = ["#16A34A", "#D97706", "#DC2626"]
     bars2 = ax2.bar(cats2, vals2, color=cols2, width=0.48, edgecolor="#1E293B", linewidth=0.7)
-    ax2.set_title("2. Painkiller #4: Automated eCTD M1–M5 Cross-Check Linter", fontsize=10, fontweight="bold", color="#0F172A")
+    ax2.set_title("2. Automated eCTD M1-M5 Cross-Check Linter", fontsize=10, fontweight="bold", color="#0F172A")
     ax2.set_ylabel("Number of Cross-Module Checks", fontsize=8.5)
     ax2.set_ylim(0, max(vals2 + [4]) * 1.3)
     for bar in bars2:
@@ -386,31 +392,42 @@ def generate_ra_dashboard_chart(report: dict[str, Any], out_png: Path, out_pdf: 
     vals3 = [dc["COMPLIANT"], dc["REVIEW_NEEDED"], dc["GAP_DETECTED"]]
     cols3 = ["#0D9488", "#F59E0B", "#E11D48"]
     bars3 = ax3.bar(cats3, vals3, color=cols3, width=0.48, edgecolor="#1E293B", linewidth=0.7)
-    ax3.set_title("3. Painkiller #2: Global Agency Guidance Drift Radar (FDA/EMA/MHRA)", fontsize=10, fontweight="bold", color="#0F172A")
+    ax3.set_title("3. Global Agency Guidance Drift Radar (FDA/EMA/MHRA)", fontsize=10, fontweight="bold", color="#0F172A")
     ax3.set_ylabel("Tracked Statutory Frameworks", fontsize=8.5)
     ax3.set_ylim(0, max(vals3 + [4]) * 1.3)
     for bar in bars3:
         h = bar.get_height()
         ax3.text(bar.get_x() + bar.get_width() / 2, h + 0.1, str(int(h)), ha="center", fontsize=9.5, fontweight="bold")
 
-    # Panel 4 (Bottom-Right): Middleman Shield & Burnout Protection Summary Card
+    # Panel 4 (Bottom-Right): Statutory Gatekeeper & Automation Telemetry Card
     ax4 = axes[1, 1]
-    ax4.set_facecolor("#0F172A")
-    ax4.axis("off")
-    ax4.set_title("4. Painkillers #3 & #5: Statutory Shield & Burnout Telemetry", fontsize=10, fontweight="bold", color="#0F172A")
+    ax4.set_xticks([])
+    ax4.set_yticks([])
+    for sp in ax4.spines.values():
+        sp.set_visible(False)
+    ax4.set_facecolor("#F8FAFC")
+    card_bg = FancyBboxPatch(
+        (0.01, 0.02), 0.98, 0.96,
+        boxstyle="round,pad=0.0,rounding_size=0.03",
+        facecolor="#0F172A", edgecolor="#1E293B", linewidth=1.0,
+        transform=ax4.transAxes, zorder=1,
+    )
+    ax4.add_patch(card_bg)
+    ax4.set_title("4. Statutory Gatekeeper & Automation Telemetry", fontsize=10, fontweight="bold", color="#0F172A")
 
+    gate_short = textwrap.shorten(str(report["gate_decision"]), width=54, placeholder="...")
     card_lines = [
-        ("STATUTORY GATEWAY VERDICT:", report["gate_decision"][:46], "#F87171" if report["rtf_blockers_count"] > 0 else "#4ADE80"),
+        ("STATUTORY GATEWAY VERDICT:", gate_short, "#F87171" if report["rtf_blockers_count"] > 0 else "#4ADE80"),
         ("Premature Filing CRL / RTF Risk:", f"{report['crl_probability_pct']}% Probability ({report['rtf_blockers_count']} Active Statutory Blockers)", "#FBBF24"),
         ("Upstream Delay Cost So Far:", f"${report['upstream_delay_cost_usd']:,} (100% Upstream R&D / CMC / Clinical)", "#38BDF8"),
-        ("90-Day CRL Reset Cost Avoided:", f"${report['premature_filing_crl_cost_usd']:,} Protected by Automated Gatekeeper", "#A78BFA"),
-        ("RA Team SLA Performance:", f"100% On-Time (0 Days Overdue — Blame-Shield Verified)", "#4ADE80"),
-        ("RA Manual Grunt-Work Saved:", f"{report['manual_hours_saved']} Hours Saved per Submission Cycle", "#2DD4BF"),
+        ("90-Day CRL Reset Cost Avoided:", f"${report['premature_filing_crl_cost_usd']:,} Protected by Automated Gatekeeper", "#C4B5FD"),
+        ("RA Team SLA Performance:", "100% On-Time (0 Days Overdue — SLA Ledger Verified)", "#4ADE80"),
+        ("RA Manual Effort Saved:", f"{report['manual_hours_saved']} Hours Saved per Submission Cycle", "#2DD4BF"),
     ]
-    y_pos = 0.84
+    y_pos = 0.87
     for label, val, col in card_lines:
-        ax4.text(0.05, y_pos, label, fontsize=8.5, fontweight="bold", color="#94A3B8", transform=ax4.transAxes)
-        ax4.text(0.05, y_pos - 0.06, val, fontsize=9.0, fontweight="bold", color=col, transform=ax4.transAxes)
+        ax4.text(0.05, y_pos, label, fontsize=8.3, fontweight="bold", color="#94A3B8", transform=ax4.transAxes, zorder=2)
+        ax4.text(0.05, y_pos - 0.055, val, fontsize=8.8, fontweight="bold", color=col, transform=ax4.transAxes, zorder=2)
         y_pos -= 0.145
 
     plt.tight_layout(rect=[0.01, 0.01, 0.99, 0.91])
@@ -547,13 +564,13 @@ def generate_ra_excel_workbook(report: dict[str, Any], out_xlsx: Path) -> None:
     readme_rows = [
         ("Submission ID", report["submission_id"]),
         ("Product / System", report["product_name"]),
-        ("Spider-Web Vertical", report["vertical"]),
+        ("Regulatory Vertical Profile", report["vertical"]),
         ("Statutory Gate Verdict", report["gate_decision"]),
         ("Overall Readiness Score", f"{report['overall_readiness_score']}/100"),
         ("RTF / CRL Probability if Filed Today", f"{report['crl_probability_pct']}% ({report['rtf_blockers_count']} statutory blockers)"),
         ("Upstream Delay vs RA Delay", f"Upstream (CMC/R&D/Clinical): {report['total_upstream_overdue_days']} days overdue | RA Team: {report['ra_overdue_days']} days overdue"),
         ("Financial Exposure Protected", f"${report['premature_filing_crl_cost_usd']:,} 90-day CRL reset cost avoided; ${report['upstream_delay_cost_usd']:,} upstream delay logged"),
-        ("RA Burnout Hours Saved", f"{report['manual_hours_saved']} manual cross-checking & chasing hours automated"),
+        ("Manual Cross-Check Hours Saved", f"{report['manual_hours_saved']} manual cross-checking & chasing hours automated"),
         ("Human-in-the-Loop QA Rule", "All automated statutory holds and eCTD cross-checks must be signed off by the qualified RA Lead / PRRC prior to agency gateway upload."),
     ]
     for k, v in readme_rows:
@@ -753,7 +770,7 @@ def build_ra_command_center_package(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Regulatory Affairs (RA) 5-Painkiller Command Center & Spider-Web Compliance Engine."
+        description="Regulatory Affairs (RA) Operations Command Center & Spider-Web Compliance Engine."
     )
     parser.add_argument(
         "--input",

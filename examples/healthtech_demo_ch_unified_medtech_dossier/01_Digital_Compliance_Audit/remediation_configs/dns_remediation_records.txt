@@ -1,3 +1,6 @@
-# Recommended DNS Anti-Spoofing & CAA Records for healthtech-demo.ch
-_dmarc.healthtech-demo.ch.   3600 IN TXT "v=DMARC1; p=quarantine; rua=mailto:postmaster@healthtech-demo.ch; adkim=r; aspf=r;"
-healthtech-demo.ch.          3600 IN CAA 0 issue "letsencrypt.org"
+# Recommended DNS Anti-Spoofing, Mail Transport & CAA Records for healthtech-demo.ch
+_dmarc.healthtech-demo.ch.     3600 IN TXT "v=DMARC1; p=quarantine; rua=mailto:postmaster@healthtech-demo.ch; adkim=r; aspf=r;"
+healthtech-demo.ch.            3600 IN CAA 0 issue "letsencrypt.org"
+# Optional RFC 8461 MTA-STS & RFC 8460 TLS-RPT hardening (once https://mta-sts.healthtech-demo.ch/.well-known/mta-sts.txt is hosted):
+_mta-sts.healthtech-demo.ch.   3600 IN TXT "v=STSv1; id=20261111T000000;"
+_smtp._tls.healthtech-demo.ch. 3600 IN TXT "v=TLSRPTv1; rua=mailto:tlsrpt@healthtech-demo.ch;"

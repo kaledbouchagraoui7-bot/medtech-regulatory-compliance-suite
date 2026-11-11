@@ -1,6 +1,6 @@
 ==============================================================================
   SENTINEL REGULATORY & TECHNICAL OPERATIONS — TERMS OF SERVICE & LIABILITY DISCLAIMER
-  Version 2026.1 | Track: general | Generated: 2026-11-11 22:08 UTC
+  Version 2026.1 | Track: general | Generated: 2026-11-11 23:05 UTC
 ==============================================================================
 
 Provider & Commercial Entity Status
@@ -17,7 +17,7 @@ All scores, Word dossiers, Excel workbooks, PRISMA tables, PSUR drafts, statutor
 
 3. Zero Fabrication Integrity & Public Source Accuracy
 ------------------------------------------------------
-Software outputs reflect third-party public endpoints (DNS, HTTP headers, OpenFDA CC0, NLM ClinicalTrials.gov v2, Europe PMC / NCBI PubMed) or Client-supplied files at the exact capture timestamp. Missing DOIs or conclusions are never invented and are highlighted yellow (#FFF2CC) for manual QA verification. Third-party registries can update after capture.
+Software outputs reflect third-party public endpoints (DNS, HTTP headers, OpenFDA CC0, NLM ClinicalTrials.gov v2, Europe PMC / NCBI PubMed) or Client-supplied files at the exact capture timestamp. Missing DOIs or conclusions are never invented and are highlighted in soft amber for manual QA verification. Third-party registries can update after capture.
 
 4. Client Authorization & Deployment Responsibility
 ---------------------------------------------------

@@ -201,9 +201,20 @@ class TestLegalAndClientOps(unittest.TestCase):
         self.assertIn('id="spec-panel-t4"', idx_txt)
         self.assertIn("ALCOA_PROVENANCE_MANIFEST.json", idx_txt)
         self.assertIn("04_eCTD_N_Count_Linter", idx_txt)
+        self.assertIn("localStorage", idx_txt)
+        self.assertIn("sentinel_lang", idx_txt)
+        self.assertIn("data-ph-fr", idx_txt)
+        self.assertIn("device_report_product_code", idx_txt)
+        self.assertIn("sentinel_avatar_github.png", idx_txt)
         self.assertNotIn("fonts.googleapis.com", idx_txt)
         self.assertNotIn("GenevaOS", idx_txt)
         self.assertNotIn("`.docx`", idx_txt)
+        # Ensure CSS color whitepaper note wasn't leaked into visible client prose
+        body_html = idx_txt.split("</style>", 1)[-1]
+        self.assertNotIn("#FFF2CC", body_html)
+        for seo_key in ("nfadp_audit_html", "eu_mdr_psur_html", "prisma_2020_html"):
+            self.assertNotIn("#FFF2CC", assets[seo_key].read_text(encoding="utf-8"))
+        self.assertNotIn("#FFF2CC", assets["terms_txt"].read_text(encoding="utf-8"))
 
         hdr_txt = assets["headers"].read_text(encoding="utf-8")
         self.assertIn("https://dns.google https://api.fda.gov https://www.ebi.ac.uk", hdr_txt)

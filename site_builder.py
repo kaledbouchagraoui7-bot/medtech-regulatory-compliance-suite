@@ -140,6 +140,11 @@ def _specimen_inspector_css() -> str:
       background: #FFF2CC;
       color: #713F12;
     }
+    .spec-table tr.qa-flag-row code {
+      background: #FDE68A;
+      border-color: #F59E0B;
+      color: #713F12;
+    }
     .badge-pass, .badge-warn, .badge-fail {
       display: inline-block;
       padding: 2px 7px;
@@ -312,7 +317,10 @@ def _live_check_css() -> str:
 
 def _storefront_core_js(intake_url_json: str, email_esc: str) -> str:
     """Return core zero-dependency UI & intake JavaScript without f-string brace conflicts."""
-    template = """    function selectTrack(trackVal) {
+    template = """    function isFrLang() {
+      return document.body.classList.contains('is-fr');
+    }
+    function selectTrack(trackVal) {
       var sel = document.getElementById('f-track');
       if (sel) sel.value = trackVal;
       var comp = document.getElementById('f-company');
@@ -326,7 +334,35 @@ def _storefront_core_js(intake_url_json: str, email_esc: str) -> str:
       var bFr = document.getElementById('btn-fr');
       if (bEn) bEn.classList.toggle('active', !isFr);
       if (bFr) bFr.classList.toggle('active', isFr);
+
+      var optEls = document.querySelectorAll('#f-track option[data-en]');
+      for (var i = 0; i < optEls.length; i++) {
+        optEls[i].textContent = isFr ? optEls[i].getAttribute('data-fr') : optEls[i].getAttribute('data-en');
+      }
+      var phEls = document.querySelectorAll('[data-ph-en]');
+      for (var j = 0; j < phEls.length; j++) {
+        phEls[j].placeholder = isFr ? phEls[j].getAttribute('data-ph-fr') : phEls[j].getAttribute('data-ph-en');
+      }
+      var lrEls = document.querySelectorAll('.live-result[data-en]');
+      for (var k = 0; k < lrEls.length; k++) {
+        if (lrEls[k].dataset.touched !== '1') {
+          lrEls[k].textContent = isFr ? lrEls[k].getAttribute('data-fr') : lrEls[k].getAttribute('data-en');
+        }
+      }
+      try {
+        localStorage.setItem('sentinel_lang', isFr ? 'fr' : 'en');
+      } catch (e) {}
     }
+    (function initLangFromPrefs() {
+      var saved = '';
+      try {
+        var qp = new URLSearchParams(window.location.search || '').get('lang');
+        if (qp === 'fr' || qp === 'en') saved = qp;
+        if (!saved) saved = localStorage.getItem('sentinel_lang') || '';
+      } catch (e) {}
+      if (saved === 'fr') setLang('fr');
+      else setLang('en');
+    })();
     function selectSpecimenTab(tabKey) {
       var keys = ['t1', 't2', 't3', 't4'];
       for (var i = 0; i < keys.length; i++) {
@@ -344,14 +380,25 @@ def _storefront_core_js(intake_url_json: str, email_esc: str) -> str:
       }
     }
     function buildIntakePayload() {
+      var isFr = isFrLang();
       var compEl = document.getElementById('f-company');
       var domEl = document.getElementById('f-domain');
       var trkEl = document.getElementById('f-track');
       var notesEl = document.getElementById('f-notes');
-      var comp = (compEl && compEl.value.trim()) ? compEl.value.trim() : 'Organization';
+      var comp = (compEl && compEl.value.trim()) ? compEl.value.trim() : (isFr ? 'Organisation' : 'Organization');
       var dom = (domEl && domEl.value.trim()) ? domEl.value.trim() : 'N/A';
       var trk = trkEl ? trkEl.value : 'Track 01 - Sentinel 25-Control External Audit';
       var notes = (notesEl && notesEl.value.trim()) ? notesEl.value.trim() : 'N/A';
+      if (isFr) {
+        var subjFr = 'Demande apercu gratuit (1 page) - ' + comp + ' (' + trk + ')';
+        var bodyFr =
+          'Societe : ' + comp + '\\n' +
+          'Domaine / Dispositif / Sujet : ' + dom + '\\n' +
+          'Module : ' + trk + '\\n' +
+          'Precisions : ' + notes + '\\n\\n' +
+          'Merci de preparer un apercu diagnostique passif gratuit (1 page, 0 EUR) ainsi que la confirmation forfaitaire sous conditions passives.';
+        return { comp: comp, dom: dom, trk: trk, notes: notes, subj: subjFr, body: bodyFr };
+      }
       var subj = 'Complimentary 1-Page Scope Preview - ' + comp + ' (' + trk + ')';
       var body =
         'Company: ' + comp + '\\n' +
@@ -364,6 +411,7 @@ def _storefront_core_js(intake_url_json: str, email_esc: str) -> str:
     function handleIntakeSubmit(ev) {
       ev.preventDefault();
       var p = buildIntakePayload();
+      var isFr = isFrLang();
       var intakeForm = __INTAKE_FORM_JSON__;
       if (intakeForm) {
         window.open(intakeForm, '_blank', 'noopener,noreferrer');
@@ -371,25 +419,41 @@ def _storefront_core_js(intake_url_json: str, email_esc: str) -> str:
       }
       window.location.href = 'mailto:__EMAIL_ESC__?subject=' + encodeURIComponent(p.subj) + '&body=' + encodeURIComponent(p.body);
       var fb = document.getElementById('form-feedback');
-      if (fb) fb.textContent = 'Email composer opened with pre-filled scope (' + p.comp + '). Or email __EMAIL_ESC__ directly.';
+      if (fb) {
+        fb.textContent = isFr
+          ? 'Messagerie ouverte avec la demande pre-remplie (' + p.comp + '). Sinon ecrivez directement a __EMAIL_ESC__.'
+          : 'Email composer opened with pre-filled scope (' + p.comp + '). Or email __EMAIL_ESC__ directly.';
+      }
       return false;
     }
     function openGmailWebCompose() {
       var p = buildIntakePayload();
+      var isFr = isFrLang();
       var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent('__EMAIL_ESC__') + '&su=' + encodeURIComponent(p.subj) + '&body=' + encodeURIComponent(p.body);
       window.open(gmailUrl, '_blank', 'noopener,noreferrer');
       var fb = document.getElementById('form-feedback');
-      if (fb) fb.textContent = 'Opened pre-filled Gmail Web compose window for ' + p.comp + '.';
+      if (fb) {
+        fb.textContent = isFr
+          ? 'Fenetre Gmail Web ouverte avec le brief pre-rempli pour ' + p.comp + '.'
+          : 'Opened pre-filled Gmail Web compose window for ' + p.comp + '.';
+      }
     }
     function copyScopeBrief() {
       var p = buildIntakePayload();
-      var fullTxt = 'To: __EMAIL_ESC__\\nSubject: ' + p.subj + '\\n\\n' + p.body;
+      var isFr = isFrLang();
+      var fullTxt = (isFr ? 'A : ' : 'To: ') + '__EMAIL_ESC__\\n' + (isFr ? 'Objet : ' : 'Subject: ') + p.subj + '\\n\\n' + p.body;
       var fb = document.getElementById('form-feedback');
+      var okMsg = isFr
+        ? 'Brief complet copie dans le presse-papiers (' + p.comp + ').'
+        : 'Copied full scope brief to clipboard (' + p.comp + ').';
+      var errMsg = isFr
+        ? 'Presse-papiers bloque ; utilisez le bouton e-mail ou ecrivez a __EMAIL_ESC__.'
+        : 'Clipboard blocked; use the email button or send to __EMAIL_ESC__.';
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(fullTxt).then(function() {
-          if (fb) fb.textContent = 'Copied full scope brief to clipboard (' + p.comp + ').';
+          if (fb) fb.textContent = okMsg;
         }, function() {
-          if (fb) fb.textContent = 'Clipboard blocked; use the email button or send to __EMAIL_ESC__.';
+          if (fb) fb.textContent = errMsg;
         });
       } else {
         var ta = document.createElement('textarea');
@@ -401,9 +465,9 @@ def _storefront_core_js(intake_url_json: str, email_esc: str) -> str:
         ta.select();
         try {
           document.execCommand('copy');
-          if (fb) fb.textContent = 'Copied full scope brief to clipboard (' + p.comp + ').';
+          if (fb) fb.textContent = okMsg;
         } catch (e) {
-          if (fb) fb.textContent = 'Copy unavailable in this browser; please send to __EMAIL_ESC__.';
+          if (fb) fb.textContent = errMsg;
         }
         document.body.removeChild(ta);
       }
@@ -416,6 +480,7 @@ def _live_check_js() -> str:
     """Return strict on-click client-side pre-check JS (zero background requests on load; XSS-safe DOM nodes)."""
     return """    function setResultLines(el, lines) {
       if (!el) return;
+      el.dataset.touched = '1';
       while (el.firstChild) el.removeChild(el.firstChild);
       for (var i = 0; i < lines.length; i++) {
         var item = lines[i];
@@ -473,57 +538,81 @@ def _live_check_js() -> str:
       }
       return count;
     }
+    function extractTxtStrings(dnsJson) {
+      return (dnsJson.Answer || [])
+        .filter(function(a) { return a && (a.type === 16 || typeof a.type === 'undefined'); })
+        .map(function(a) { return String(a.data || '').replace(/"\\s*"/g, '').replace(/^"|"$/g, ''); });
+    }
     async function runDnsPrecheck() {
       var inp = document.getElementById('lc-domain-input');
       var out = document.getElementById('lc-dns-out');
+      var isFr = isFrLang();
       var raw = (inp ? inp.value : '').trim().toLowerCase().replace(/^https?:\\/\\//, '').replace(/\\/.*$/, '').replace(/^www\\./, '');
       if (!/^[a-z0-9.-]+\\.[a-z]{2,}$/.test(raw)) {
-        setResultLines(out, ['Please enter a valid domain name (e.g. example-medtech.ch).']);
+        setResultLines(out, [isFr ? 'Veuillez saisir un nom de domaine valide (ex. example-medtech.ch).' : 'Please enter a valid domain name (e.g. example-medtech.ch).']);
         return;
       }
-      setResultLines(out, ['Querying public Google DoH TXT records for ' + raw + '...']);
+      setResultLines(out, [isFr ? ('Interrogation Google DoH en cours pour ' + raw + '...') : ('Querying public Google DoH DNS records for ' + raw + '...')]);
       try {
         var qDmarc = fetch('https://dns.google/resolve?name=' + encodeURIComponent('_dmarc.' + raw) + '&type=TXT').then(function(r) { return r.json(); });
         var qRoot = fetch('https://dns.google/resolve?name=' + encodeURIComponent(raw) + '&type=TXT').then(function(r) { return r.json(); });
         var qSts = fetch('https://dns.google/resolve?name=' + encodeURIComponent('_mta-sts.' + raw) + '&type=TXT').then(function(r) { return r.json(); });
-        var res = await Promise.all([qDmarc, qRoot, qSts]);
-        var dmarcTxts = (res[0].Answer || []).map(function(a) { return String(a.data || '').replace(/^"|"$/g, ''); }).filter(function(t) { return /v=dmarc1/i.test(t); });
-        var spfTxts = (res[1].Answer || []).map(function(a) { return String(a.data || '').replace(/^"|"$/g, ''); }).filter(function(t) { return /v=spf1/i.test(t); });
-        var stsTxts = (res[2].Answer || []).map(function(a) { return String(a.data || '').replace(/^"|"$/g, ''); }).filter(function(t) { return /v=stsv1/i.test(t); });
+        var qCaa = fetch('https://dns.google/resolve?name=' + encodeURIComponent(raw) + '&type=CAA').then(function(r) { return r.json(); });
+        var res = await Promise.all([qDmarc, qRoot, qSts, qCaa]);
+        var dmarcTxts = extractTxtStrings(res[0]).filter(function(t) { return /v=dmarc1/i.test(t); });
+        var spfTxts = extractTxtStrings(res[1]).filter(function(t) { return /v=spf1/i.test(t); });
+        var stsTxts = extractTxtStrings(res[2]).filter(function(t) { return /v=stsv1/i.test(t); });
+        var caaAns = (res[3].Answer || []).map(function(a) { return String(a.data || ''); }).filter(Boolean);
 
-        var dmarcLine = dmarcTxts.length ? dmarcTxts[0] : 'MISSING _dmarc TXT record (spoofing risk)';
-        var spfStatus = 'MISSING v=spf1 TXT record';
+        var dmarcLine = isFr ? 'ABSENT (_dmarc introuvable : risque usurpation)' : 'MISSING _dmarc TXT record (spoofing risk)';
+        if (dmarcTxts.length) {
+          var isNone = /p=none\\b/i.test(dmarcTxts[0]);
+          dmarcLine = dmarcTxts[0] + (isNone ? (isFr ? ' (Observation seule p=none : pas de blocage)' : ' (Monitoring only p=none — no enforcement)') : '');
+        }
+        var spfStatus = isFr ? 'ABSENT (enregistrement v=spf1 introuvable)' : 'MISSING v=spf1 TXT record';
         if (spfTxts.length) {
           var lookups = countSpfLookups(spfTxts[0]);
-          spfStatus = 'Direct mechanisms ~' + lookups + '/10 RFC 7208 limit' + (lookups > 10 ? ' (OVER 10-LOOKUP CAP!)' : (lookups >= 8 ? ' (Near limit before nested includes)' : '')) + ' | ' + spfTxts[0].slice(0, 75);
+          spfStatus = (isFr ? 'Recherches directes ~' : 'Direct mechanisms ~') + lookups + '/10 RFC 7208'
+            + (lookups > 10 ? (isFr ? ' (DEPASSEMENT >10 PERMERROR !)' : ' (OVER 10-LOOKUP CAP!)') : (lookups >= 8 ? (isFr ? ' (Proche du plafond avant includes imbriques)' : ' (Near limit before nested includes)') : ''))
+            + ' | ' + spfTxts[0].slice(0, 75);
         }
-        var stsLine = stsTxts.length ? stsTxts[0] : 'Not published (optional RFC 8461 MTA-STS hardening)';
-        lastLiveSummary.dns = 'DNS Pre-Check (' + raw + '): DMARC=' + dmarcLine + '; SPF=' + spfStatus + '; MTA-STS=' + stsLine;
+        var stsLine = stsTxts.length ? stsTxts[0] : (isFr ? 'Non publie (durcissement RFC 8461 recommande)' : 'Not published (recommended RFC 8461 hardening)');
+        var caaLine = caaAns.length ? caaAns.join('; ').slice(0, 80) : (isFr ? 'Non publie (RFC 8659)' : 'Not published (RFC 8659)');
+        lastLiveSummary.dns = 'DNS Pre-Check (' + raw + '): DMARC=' + dmarcLine + '; SPF=' + spfStatus + '; MTA-STS=' + stsLine + '; CAA=' + caaLine;
         setResultLines(out, [
-          { label: 'Domain', text: raw },
+          { label: isFr ? 'Domaine' : 'Domain', text: raw },
           { label: 'DMARC', text: dmarcLine },
           { label: 'SPF', text: spfStatus },
-          { label: 'MTA-STS', text: stsLine }
+          { label: 'MTA-STS', text: stsLine },
+          { label: 'CAA', text: caaLine }
         ]);
       } catch (err) {
-        setResultLines(out, ['Public DNS DoH check failed cleanly (' + (err && err.message ? err.message : 'network blocked') + '). Request a full Sentinel server-side audit below.']);
+        setResultLines(out, [(isFr ? 'Verification Google DoH impossible (' : 'Public DNS DoH check failed cleanly (') + (err && err.message ? err.message : 'network blocked') + (isFr ? '). Demandez un audit complet ci-dessous.' : '). Request a full Sentinel audit below.')]);
       }
     }
     async function runFdaPrecheck() {
       var inp = document.getElementById('lc-fda-input');
       var out = document.getElementById('lc-fda-out');
+      var isFr = isFrLang();
       var qRaw = (inp ? inp.value : '').trim();
       if (!qRaw || qRaw.length < 2) {
-        setResultLines(out, ['Enter a medical device keyword or FDA product code (e.g. insulin pump).']);
+        setResultLines(out, [isFr ? 'Saisissez un mot-cle dispositif ou code produit FDA (ex. insulin pump).' : 'Enter a medical device keyword or FDA product code (e.g. insulin pump).']);
         return;
       }
-      setResultLines(out, ['Querying public OpenFDA MAUDE database for "' + qRaw + '"...']);
+      setResultLines(out, [isFr ? ('Requete OpenFDA MAUDE en cours pour "' + qRaw + '"...') : ('Querying public OpenFDA MAUDE database for "' + qRaw + '"...')]);
       try {
         var cleanTerm = qRaw.replace(/["\\\\]/g, ' ').trim();
-        var url = 'https://api.fda.gov/device/event.json?search=' + encodeURIComponent('"' + cleanTerm + '"') + '&count=event_type.exact';
+        var searchExpr = '';
+        if (/^[A-Za-z]{3}$/.test(cleanTerm)) {
+          searchExpr = encodeURIComponent('device.device_report_product_code:"' + cleanTerm.toUpperCase() + '"');
+        } else {
+          var toks = cleanTerm.split(/\\s+/).filter(Boolean);
+          searchExpr = toks.map(function(t) { return encodeURIComponent('"' + t + '"'); }).join('+AND+');
+        }
+        var url = 'https://api.fda.gov/device/event.json?search=' + searchExpr + '&count=event_type.exact';
         var r = await fetch(url);
         if (!r.ok) {
-          setResultLines(out, ['OpenFDA returned HTTP ' + r.status + ' for "' + cleanTerm + '" (no matching MAUDE events or broader term needed).']);
+          setResultLines(out, [isFr ? ('OpenFDA a retourne HTTP ' + r.status + ' pour "' + cleanTerm + '" (aucun signalement exact ou terme plus large requis).') : ('OpenFDA returned HTTP ' + r.status + ' for "' + cleanTerm + '" (no matching MAUDE events or broader term needed).')]);
           return;
         }
         var js = await r.json();
@@ -536,34 +625,35 @@ def _live_check_js() -> str:
         }
         lastLiveSummary.fda = 'OpenFDA MAUDE Pre-Check (' + cleanTerm + '): ' + total.toLocaleString() + ' total indexed events (' + breakdown.join(', ') + ')';
         setResultLines(out, [
-          { label: 'Query', text: cleanTerm },
-          { label: 'Indexed MAUDE Events', text: total.toLocaleString() },
-          { label: 'Severity Split', text: breakdown.length ? breakdown.join(' | ') : 'No event_type breakdown available' }
+          { label: isFr ? 'Requete' : 'Query', text: cleanTerm },
+          { label: isFr ? 'Rapports MAUDE Indexes' : 'Indexed MAUDE Events', text: total.toLocaleString() },
+          { label: isFr ? 'Repartition Gravite' : 'Severity Split', text: breakdown.length ? breakdown.join(' | ') : (isFr ? 'Aucun detail event_type' : 'No event_type breakdown available') }
         ]);
       } catch (err) {
-        setResultLines(out, ['OpenFDA request could not complete (' + (err && err.message ? err.message : 'network error') + ').']);
+        setResultLines(out, [(isFr ? 'Requete OpenFDA interrompue (' : 'OpenFDA request could not complete (') + (err && err.message ? err.message : 'network error') + ').']);
       }
     }
     async function runEpmcPrecheck() {
       var inp = document.getElementById('lc-epmc-input');
       var out = document.getElementById('lc-epmc-out');
+      var isFr = isFrLang();
       var qRaw = (inp ? inp.value : '').trim();
       if (!qRaw || qRaw.length < 2) {
-        setResultLines(out, ['Enter clinical/PICO terms (e.g. GLP-1 renal outcomes).']);
+        setResultLines(out, [isFr ? 'Saisissez des termes cliniques/PICO (ex. GLP-1 renal outcomes).' : 'Enter clinical/PICO terms (e.g. GLP-1 renal outcomes).']);
         return;
       }
-      setResultLines(out, ['Querying Europe PMC REST API for "' + qRaw + '"...']);
+      setResultLines(out, [isFr ? ('Recherche Europe PMC en cours pour "' + qRaw + '"...') : ('Querying Europe PMC REST API for "' + qRaw + '"...')]);
       try {
         var url = 'https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=' + encodeURIComponent(qRaw) + '&resultType=lite&format=json&pageSize=3';
         var r = await fetch(url);
         if (!r.ok) {
-          setResultLines(out, ['Europe PMC returned HTTP ' + r.status + '.']);
+          setResultLines(out, [(isFr ? 'Europe PMC a retourne HTTP ' : 'Europe PMC returned HTTP ') + r.status + '.']);
           return;
         }
         var js = await r.json();
         var hitCount = Number(js.hitCount || 0);
         var list = (js.resultList && js.resultList.result) ? js.resultList.result : [];
-        var lines = [{ label: 'Matching Records', text: hitCount.toLocaleString() + ' indexed articles/preprints' }];
+        var lines = [{ label: isFr ? 'Notices Trouvees' : 'Matching Records', text: hitCount.toLocaleString() + (isFr ? ' articles / preprints indexes' : ' indexed articles/preprints') }];
         for (var i = 0; i < Math.min(3, list.length); i++) {
           var item = list[i];
           var pmid = item.pmid ? String(item.pmid) : '';
@@ -575,7 +665,7 @@ def _live_check_js() -> str:
         lastLiveSummary.epmc = 'Europe PMC Pre-Check (' + qRaw + '): ' + hitCount.toLocaleString() + ' matching records found.';
         setResultLines(out, lines);
       } catch (err) {
-        setResultLines(out, ['Europe PMC request could not complete (' + (err && err.message ? err.message : 'network error') + ').']);
+        setResultLines(out, [(isFr ? 'Requete Europe PMC impossible (' : 'Europe PMC request could not complete (') + (err && err.message ? err.message : 'network error') + ').']);
       }
     }
 """
@@ -593,8 +683,8 @@ def render_specimen_inspector_html() -> str:
               </h3>
             </div>
             <span class="spec-badge-note">
-              <span class="lang-en">Illustrative Structure &middot; Redacted Specimen Layout (#FFF2CC = Manual QA Flag)</span>
-              <span class="lang-fr">Structure Illustrative Anonymis&eacute;e (#FFF2CC = Contr&ocirc;le Qualit&eacute; Manuel)</span>
+              <span class="lang-en">Illustrative Specimen &middot; Amber Highlight = Manual QA Verification</span>
+              <span class="lang-fr">Sp&eacute;cimen Anonymis&eacute; &middot; Surlignage Ambre = Contr&ocirc;le QA Manuel</span>
             </span>
           </div>
 
@@ -621,7 +711,7 @@ def render_specimen_inspector_html() -> str:
             <div class="spec-meta">
               <p>
                 <span class="lang-en"><strong>Sample Workbook Sheet:</strong> <code>02_Executive_Risk_Matrix</code> (DMARC, SPF &gt;10 PermError Check, MTA-STS, CMP Symmetry &amp; Nginx/Cloudflare Fix Pack).</span>
-                <span class="lang-fr"><strong>Onglet Excel Exemple :</strong> <code>02_Executive_Risk_Matrix</code> (DMARC, plafond 10 requ&ecirc;tes SPF, MTA-STS, banniere cookies &amp; correctifs DNS/Nginx).</span>
+                <span class="lang-fr"><strong>Onglet Excel Exemple :</strong> <code>02_Executive_Risk_Matrix</code> (DMARC, plafond 10 requ&ecirc;tes SPF, MTA-STS, banni&egrave;re cookies &amp; correctifs DNS/Nginx).</span>
               </p>
               <div class="spec-actions">
                 <a class="btn-sample-dl" href="samples/sentinel_swiss_sme_sample.zip" download>
@@ -638,9 +728,9 @@ def render_specimen_inspector_html() -> str:
               <table class="spec-table">
                 <thead>
                   <tr>
-                    <th>Control ID</th>
+                    <th><span class="lang-en">Control ID</span><span class="lang-fr">ID Contr&ocirc;le</span></th>
                     <th><span class="lang-en">Pillar &amp; Check</span><span class="lang-fr">Pilier &amp; Contr&ocirc;le</span></th>
-                    <th>Status</th>
+                    <th><span class="lang-en">Status</span><span class="lang-fr">Statut</span></th>
                     <th><span class="lang-en">Observed Evidence (Specimen)</span><span class="lang-fr">Preuve Observ&eacute;e (Sp&eacute;cimen)</span></th>
                     <th><span class="lang-en">Deliverable Action</span><span class="lang-fr">Action Pr&ecirc;te au D&eacute;ploiement</span></th>
                   </tr>
@@ -648,38 +738,38 @@ def render_specimen_inspector_html() -> str:
                 <tbody>
                   <tr>
                     <td><code>EML-01</code></td>
-                    <td>DMARC Anti-Spoofing Policy</td>
+                    <td><span class="lang-en">DMARC Anti-Spoofing Policy</span><span class="lang-fr">Politique Anti-Usurpation DMARC</span></td>
                     <td><span class="badge-fail">FAIL</span></td>
-                    <td><code>_dmarc.example-medtech.ch</code> missing or <code>p=none</code></td>
-                    <td>Step-up DNS TXT progression: <code>p=none</code> &rarr; <code>p=quarantine</code> &rarr; <code>p=reject</code></td>
+                    <td><span class="lang-en"><code>_dmarc.example-medtech.ch</code> missing or <code>p=none</code></span><span class="lang-fr"><code>_dmarc.example-medtech.ch</code> absent ou <code>p=none</code></span></td>
+                    <td><span class="lang-en">Step-up DNS TXT progression: <code>p=none</code> &rarr; <code>p=quarantine</code> &rarr; <code>p=reject</code></span><span class="lang-fr">Progression DNS TXT s&eacute;curis&eacute;e : <code>p=none</code> &rarr; <code>p=quarantine</code> &rarr; <code>p=reject</code></span></td>
                   </tr>
                   <tr>
                     <td><code>EML-02</code></td>
-                    <td>SPF &amp; RFC 7208 10-Lookup Cap</td>
+                    <td><span class="lang-en">SPF &amp; RFC 7208 10-Lookup Cap</span><span class="lang-fr">Plafond 10 Recherches SPF (RFC 7208)</span></td>
                     <td><span class="badge-fail">FAIL</span></td>
-                    <td>11 recursive DNS lookups detected (&gt;10 PermError risk)</td>
-                    <td>Consolidate/flatten <code>include:</code> directives down to &le;8 lookups</td>
+                    <td><span class="lang-en">11 recursive DNS lookups detected (&gt;10 PermError risk)</span><span class="lang-fr">11 requ&ecirc;tes DNS r&eacute;cursives d&eacute;tect&eacute;es (risque PermError &gt;10)</span></td>
+                    <td><span class="lang-en">Consolidate/flatten <code>include:</code> directives down to &le;8 lookups</span><span class="lang-fr">Aplatir ou consolider les directives <code>include:</code> sous &le;8 recherches</span></td>
                   </tr>
                   <tr>
                     <td><code>PRV-02</code></td>
-                    <td>CMP Reject Symmetry &amp; US Fonts</td>
+                    <td><span class="lang-en">CMP Reject Symmetry &amp; US Fonts</span><span class="lang-fr">Sym&eacute;trie Cookies &amp; Polices US</span></td>
                     <td><span class="badge-warn">WARN</span></td>
-                    <td>Cookie notice lacks first-layer Reject / Necessary-Only button</td>
-                    <td>Add symmetric Reject button &amp; self-host WOFF2 fonts locally</td>
+                    <td><span class="lang-en">Cookie notice lacks first-layer Reject / Necessary-Only button</span><span class="lang-fr">Bandeau cookies sans bouton Refuser d&egrave;s le premier niveau</span></td>
+                    <td><span class="lang-en">Add symmetric Reject button &amp; self-host WOFF2 fonts locally</span><span class="lang-fr">Ajouter un bouton Refuser sym&eacute;trique &amp; h&eacute;berger les WOFF2 en local</span></td>
                   </tr>
                   <tr class="qa-flag-row">
                     <td><code>SEC-01</code></td>
-                    <td>HTTP Strict-Transport-Security &amp; CSP</td>
-                    <td><span class="badge-warn">QA CHECK</span></td>
-                    <td>HSTS present; legacy wildcard subdomain policy flagged (<code>#FFF2CC</code>)</td>
-                    <td>Confirm legacy portal TLS readiness with IT prior to <code>preload</code></td>
+                    <td><span class="lang-en">HTTP Strict-Transport-Security &amp; CSP</span><span class="lang-fr">En-t&ecirc;tes HSTS &amp; Content-Security-Policy</span></td>
+                    <td><span class="badge-warn"><span class="lang-en">QA CHECK</span><span class="lang-fr">REVUE QA</span></span></td>
+                    <td><span class="lang-en">HSTS present; legacy wildcard subdomain policy flagged amber for review</span><span class="lang-fr">HSTS actif ; sous-domaines historiques signal&eacute;s en ambre pour validation IT</span></td>
+                    <td><span class="lang-en">Confirm legacy portal TLS readiness with IT prior to <code>preload</code></span><span class="lang-fr">Valider la compatibilit&eacute; TLS des anciens sous-domaines avant <code>preload</code></span></td>
                   </tr>
                   <tr>
                     <td><code>SEC-09</code></td>
-                    <td>Vulnerability Disclosure (<code>security.txt</code>)</td>
+                    <td><span class="lang-en">Vulnerability Disclosure (<code>security.txt</code>)</span><span class="lang-fr">Divulgation Coordonn&eacute;e (<code>security.txt</code>)</span></td>
                     <td><span class="badge-pass">PASS</span></td>
-                    <td>RFC 9116 file verified at <code>/.well-known/security.txt</code></td>
-                    <td>Retain annual expiration renewal reminder in QMS log</td>
+                    <td><span class="lang-en">RFC 9116 file verified at <code>/.well-known/security.txt</code></span><span class="lang-fr">Fichier RFC 9116 v&eacute;rifi&eacute; sur <code>/.well-known/security.txt</code></span></td>
+                    <td><span class="lang-en">Retain annual expiration renewal reminder in QMS log</span><span class="lang-fr">Conserver le rappel de renouvellement annuel dans le registre SMQ</span></td>
                   </tr>
                 </tbody>
               </table>
@@ -714,36 +804,36 @@ add_header X-Content-Type-Options "nosniff" always;</pre>
               <table class="spec-table">
                 <thead>
                   <tr>
-                    <th>PSUR Section</th>
+                    <th><span class="lang-en">PSUR Section</span><span class="lang-fr">Section PSUR</span></th>
                     <th><span class="lang-en">Source API Endpoint</span><span class="lang-fr">Source API Publique</span></th>
                     <th><span class="lang-en">Structured Fields Exported</span><span class="lang-fr">Champs Structur&eacute;s Export&eacute;s</span></th>
-                    <th>QA Rule</th>
+                    <th><span class="lang-en">QA Rule</span><span class="lang-fr">R&egrave;gle QA</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td>MAUDE Severity &amp; Spike Radar</td>
+                    <td><span class="lang-en">MAUDE Severity &amp; Spike Radar</span><span class="lang-fr">Gravit&eacute; MAUDE &amp; Radar de Pics</span></td>
                     <td><code>api.fda.gov/device/event</code></td>
-                    <td>Malfunction / Injury / Death split, IMDRF terms &amp; Z-score monthly spike alerts (<code>Z &ge; 2.0</code>)</td>
-                    <td><span class="badge-pass">AUTO-COUNTED</span></td>
+                    <td><span class="lang-en">Malfunction / Injury / Death split, IMDRF terms &amp; Z-score monthly spike alerts (<code>Z &ge; 2.0</code>)</span><span class="lang-fr">R&eacute;partition Pannes / Blessures / D&eacute;c&egrave;s, termes IMDRF &amp; alertes Z-score (<code>Z &ge; 2.0</code>)</span></td>
+                    <td><span class="badge-pass"><span class="lang-en">AUTO-COUNTED</span><span class="lang-fr">COMPTAGE AUTO</span></span></td>
                   </tr>
                   <tr>
-                    <td>Predicate &amp; Recall Log</td>
+                    <td><span class="lang-en">Predicate &amp; Recall Log</span><span class="lang-fr">Pr&eacute;dicats 510(k) &amp; Rappels FDA</span></td>
                     <td><code>device/510k</code> &amp; <code>recall</code></td>
-                    <td>K-number decision dates, Class I/II/III status &amp; open remediation summaries</td>
-                    <td><span class="badge-pass">TRACEABLE</span></td>
+                    <td><span class="lang-en">K-number decision dates, Class I/II/III status &amp; open remediation summaries</span><span class="lang-fr">Num&eacute;ros K, dates d'approbation, classes de rappel I/II/III &amp; synth&egrave;se actions</span></td>
+                    <td><span class="badge-pass"><span class="lang-en">TRACEABLE</span><span class="lang-fr">TRAC&Eacute;</span></span></td>
                   </tr>
                   <tr>
-                    <td>PMCF Clinical Registry</td>
+                    <td><span class="lang-en">PMCF Clinical Registry</span><span class="lang-fr">Registre Clinique PMCF</span></td>
                     <td><code>clinicaltrials.gov/api/v2</code></td>
-                    <td>Humanized study status, enrollment, Sponsor, clickable <code>NCTId</code> hyperlink</td>
-                    <td><span class="badge-pass">VERIFIED URL</span></td>
+                    <td><span class="lang-en">Humanized study status, enrollment, Sponsor, clickable <code>NCTId</code> hyperlink</span><span class="lang-fr">Statut lisible, effectif, promoteur et lien direct <code>NCTId</code> officiel</span></td>
+                    <td><span class="badge-pass"><span class="lang-en">VERIFIED URL</span><span class="lang-fr">URL V&Eacute;RIFI&Eacute;E</span></span></td>
                   </tr>
                   <tr class="qa-flag-row">
-                    <td>Blank Narrative / Code</td>
-                    <td>Unmapped FDA event record</td>
-                    <td>Missing manufacturer narrative or unknown device code (<code>#FFF2CC</code>)</td>
-                    <td><span class="badge-warn">NO GUESSWORK</span></td>
+                    <td><span class="lang-en">Blank Narrative / Code</span><span class="lang-fr">Champ ou Code Source Absent</span></td>
+                    <td><span class="lang-en">Unmapped FDA event record</span><span class="lang-fr">Notice FDA sans narration compl&egrave;te</span></td>
+                    <td><span class="lang-en">Missing manufacturer narrative or unknown device code preserved amber for manual QA</span><span class="lang-fr">Narration ou code absent conserv&eacute; vide avec surbrillance ambre pour relecture QA</span></td>
+                    <td><span class="badge-warn"><span class="lang-en">NO GUESSWORK</span><span class="lang-fr">Z&Eacute;RO INVENTION</span></span></td>
                   </tr>
                 </tbody>
               </table>
@@ -760,8 +850,8 @@ High-Res Visual (.png + .pdf):   300-DPI Multi-Panel Post-Market Safety &amp; Tr
           <div id="spec-panel-t3" class="spec-panel" role="tabpanel" aria-labelledby="spec-tab-t3">
             <div class="spec-meta">
               <p>
-                <span class="lang-en"><strong>Sample Literature &amp; Cohort Dossier:</strong> Conserved PRISMA 2020 flow equation, Vancouver Word citations, RoB 2 / NOS framework summary, and ready-to-import <code>.ris</code> / <code>.bib</code> files.</span>
-                <span class="lang-fr"><strong>Dossier Clinique &amp; Biostats Exemple :</strong> &Eacute;quation PRISMA 2020 conserv&eacute;e, citations Vancouver Word, synth&egrave;se RoB 2 / NOS et exports <code>.ris</code> / <code>.bib</code>.</span>
+                <span class="lang-en"><strong>Sample Literature &amp; Cohort Dossier:</strong> Conserved PRISMA 2020 flow equation, Vancouver Word citations, RoB 2 / NOS framework summary, and ready-to-import .ris / .bib files.</span>
+                <span class="lang-fr"><strong>Dossier Clinique &amp; Biostats Exemple :</strong> &Eacute;quation PRISMA 2020 conserv&eacute;e, citations Vancouver Word, synth&egrave;se RoB 2 / NOS et exports .ris / .bib.</span>
               </p>
               <div class="spec-actions">
                 <a class="btn-sample-dl" href="samples/prisma_glp1_clinical_sample.zip" download>
@@ -778,36 +868,36 @@ High-Res Visual (.png + .pdf):   300-DPI Multi-Panel Post-Market Safety &amp; Tr
               <table class="spec-table">
                 <thead>
                   <tr>
-                    <th>PRISMA / Biostat Block</th>
+                    <th><span class="lang-en">PRISMA / Biostat Block</span><span class="lang-fr">Bloc PRISMA / Biostats</span></th>
                     <th><span class="lang-en">Verification Formula</span><span class="lang-fr">R&egrave;gle de V&eacute;rification</span></th>
                     <th><span class="lang-en">Excel / Word Presentation</span><span class="lang-fr">Restitution Excel / Word</span></th>
-                    <th>Status</th>
+                    <th><span class="lang-en">Status</span><span class="lang-fr">Statut</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td>Dual-Source Screening</td>
+                    <td><span class="lang-en">Dual-Source Screening</span><span class="lang-fr">Criblage Double Source</span></td>
                     <td><code>N_identified - N_dup = N_screened</code></td>
-                    <td>Strict integer conservation verified prior to rendering 300-DPI flow diagram</td>
-                    <td><span class="badge-pass">CONSERVED</span></td>
+                    <td><span class="lang-en">Strict integer conservation verified prior to rendering 300-DPI flow diagram</span><span class="lang-fr">Conservation arithm&eacute;tique stricte contr&ocirc;l&eacute;e avant rendu du diagramme 300 DPI</span></td>
+                    <td><span class="badge-pass"><span class="lang-en">CONSERVED</span><span class="lang-fr">V&Eacute;RIFI&Eacute;</span></span></td>
                   </tr>
                   <tr>
-                    <td>Vancouver Table + <code>.ris</code> / <code>.bib</code></td>
-                    <td>Mandatory clickable <code>PMID</code> &amp; non-fabricated <code>DOI</code></td>
-                    <td>Exports directly to Zotero / EndNote / BibTeX alongside Word &amp; Excel tables</td>
-                    <td><span class="badge-pass">ZERO-FABRICATION</span></td>
+                    <td><span class="lang-en">Vancouver Table + .ris / .bib</span><span class="lang-fr">Table Vancouver + .ris / .bib</span></td>
+                    <td><span class="lang-en">Mandatory clickable <code>PMID</code> &amp; verified <code>DOI</code></span><span class="lang-fr"><code>PMID</code> cliquables &amp; <code>DOI</code> primaires v&eacute;rifi&eacute;s</span></td>
+                    <td><span class="lang-en">Exports directly to Zotero / EndNote / BibTeX alongside Word &amp; Excel tables</span><span class="lang-fr">Import direct dans Zotero / EndNote / BibTeX avec Word et Excel align&eacute;s</span></td>
+                    <td><span class="badge-pass"><span class="lang-en">ZERO-FABRICATION</span><span class="lang-fr">Z&Eacute;RO INVENTION</span></span></td>
                   </tr>
                   <tr>
-                    <td>ICH E9 Table 1 + RoB Summary</td>
-                    <td>Design-matched RoB 2 / NOS / JBI map</td>
-                    <td>Shapiro-Wilk <code>Mean &plusmn; SD</code> vs. <code>Median [IQR]</code> + RoB appraisal framework table</td>
-                    <td><span class="badge-pass">ICH E9 ALIGNED</span></td>
+                    <td><span class="lang-en">ICH E9 Table 1 + RoB Summary</span><span class="lang-fr">Table 1 ICH E9 + Synth&egrave;se RoB</span></td>
+                    <td><span class="lang-en">Design-matched RoB 2 / NOS / JBI map</span><span class="lang-fr">Grille RoB 2 / NOS / JBI par sch&eacute;ma</span></td>
+                    <td><span class="lang-en">Shapiro-Wilk <code>Mean &plusmn; SD</code> vs. <code>Median [IQR]</code> + RoB appraisal framework table</span><span class="lang-fr">Tests Shapiro-Wilk (<code>Moy &plusmn; ET</code> vs. <code>M&eacute;d [IQR]</code>) et tableau de biais</span></td>
+                    <td><span class="badge-pass"><span class="lang-en">ICH E9 ALIGNED</span><span class="lang-fr">CONFORME ICH E9</span></span></td>
                   </tr>
                   <tr class="qa-flag-row">
-                    <td>Missing Abstract / SD</td>
-                    <td>Empty variance or missing full text</td>
-                    <td>Cell preserved &amp; shaded <code>#FFF2CC</code> (never imputed silently)</td>
-                    <td><span class="badge-warn">QA FLAGGED</span></td>
+                    <td><span class="lang-en">Missing Abstract / SD</span><span class="lang-fr">R&eacute;sum&eacute; ou &Eacute;cart-Type Absent</span></td>
+                    <td><span class="lang-en">Empty variance or missing full text</span><span class="lang-fr">Variance ou texte int&eacute;gral absent</span></td>
+                    <td><span class="lang-en">Cell preserved blank &amp; shaded soft amber (never imputed silently)</span><span class="lang-fr">Cellule conserv&eacute;e vide et surlign&eacute;e en ambre (jamais compl&eacute;t&eacute;e sans source)</span></td>
+                    <td><span class="badge-warn"><span class="lang-en">QA FLAGGED</span><span class="lang-fr">SIGNAL&Eacute; QA</span></span></td>
                   </tr>
                 </tbody>
               </table>
@@ -840,36 +930,36 @@ High-Res Visual (.png + .pdf):   300-DPI Multi-Panel Post-Market Safety &amp; Tr
               <table class="spec-table">
                 <thead>
                   <tr>
-                    <th>Gatekeeper Sheet / File</th>
+                    <th><span class="lang-en">Gatekeeper Sheet / File</span><span class="lang-fr">Onglet / Fichier de Contr&ocirc;le</span></th>
                     <th><span class="lang-en">Cross-Check Logic</span><span class="lang-fr">Contr&ocirc;le Crois&eacute;</span></th>
                     <th><span class="lang-en">Sample Specimen Detection</span><span class="lang-fr">D&eacute;tection Exemple</span></th>
-                    <th>Outcome</th>
+                    <th><span class="lang-en">Outcome</span><span class="lang-fr">D&eacute;cision</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td><code>02_Upstream_Blame_Shield</code></td>
-                    <td>Target vs. actual handoff delta (days)</td>
-                    <td>CMC stability tables delivered +9d post-freeze &rarr; attributes critical-path slip</td>
-                    <td><span class="badge-warn">SLA LOGGED</span></td>
+                    <td><code>1_Upstream_SLA_Attribution</code></td>
+                    <td><span class="lang-en">Target vs. actual handoff delta (days)</span><span class="lang-fr">&Eacute;cart SLA pr&eacute;vu vs. r&eacute;el (jours)</span></td>
+                    <td><span class="lang-en">CMC stability tables delivered +9d post-freeze &rarr; attributes critical-path slip</span><span class="lang-fr">Tables stabilit&eacute; CMC livr&eacute;es &agrave; +9j &rarr; tra&ccedil;abilit&eacute; objective du retard amont</span></td>
+                    <td><span class="badge-warn"><span class="lang-en">SLA LOGGED</span><span class="lang-fr">SLA TRAC&Eacute;</span></span></td>
                   </tr>
                   <tr class="qa-flag-row">
                     <td><code>04_eCTD_N_Count_Linter</code></td>
-                    <td>Module 2.7 vs. Module 5 table counts</td>
-                    <td>Mismatch flagged for RA review before publishing sequence XML (<code>#FFF2CC</code>)</td>
-                    <td><span class="badge-fail">BLOCK UNTIL FIXED</span></td>
+                    <td><span class="lang-en">Module 2.7 vs. Module 5 table counts</span><span class="lang-fr">Effectifs Module 2.7 vs. Module 5</span></td>
+                    <td><span class="lang-en">Mismatch highlighted amber for RA review before publishing sequence XML</span><span class="lang-fr">Incoh&eacute;rence surlign&eacute;e ambre pour correction AR avant export XML</span></td>
+                    <td><span class="badge-fail"><span class="lang-en">BLOCK UNTIL FIXED</span><span class="lang-fr">BLOCAGE PR&Eacute;-D&Eacute;P&Ocirc;T</span></span></td>
                   </tr>
                   <tr>
                     <td><code>05_Agency_Drift_Radar</code></td>
-                    <td>FDA / EMA / Swissmedic / MDCG tags</td>
-                    <td>Direct statutory URLs mapped to active submission milestones</td>
-                    <td><span class="badge-pass">MAPPED</span></td>
+                    <td><span class="lang-en">FDA / EMA / Swissmedic / MDCG tags</span><span class="lang-fr">Balises FDA / EMA / Swissmedic / MDCG</span></td>
+                    <td><span class="lang-en">Direct statutory URLs mapped to active submission milestones</span><span class="lang-fr">R&eacute;f&eacute;rences r&eacute;glementaires li&eacute;es aux jalons actifs du dossier</span></td>
+                    <td><span class="badge-pass"><span class="lang-en">MAPPED</span><span class="lang-fr">CARTOGRAPHI&Eacute;</span></span></td>
                   </tr>
                   <tr>
                     <td><code>ALCOA_PROVENANCE_MANIFEST.json</code></td>
-                    <td>UTC timestamp + SHA-256 per file</td>
-                    <td>Immutable cryptographic verification across Word, Excel, PNG, PDF &amp; ZIP</td>
-                    <td><span class="badge-pass">ALCOA+ HASHED</span></td>
+                    <td><span class="lang-en">UTC timestamp + SHA-256 per file</span><span class="lang-fr">Horodatage UTC + empreinte SHA-256</span></td>
+                    <td><span class="lang-en">Immutable cryptographic verification across Word, Excel, PNG, PDF &amp; ZIP</span><span class="lang-fr">V&eacute;rification d'int&eacute;grit&eacute; cryptographique sur Word, Excel, PNG, PDF et ZIP</span></td>
+                    <td><span class="badge-pass"><span class="lang-en">ALCOA+ HASHED</span><span class="lang-fr">ALCOA+ CERTIFI&Eacute;</span></span></td>
                   </tr>
                 </tbody>
               </table>
@@ -882,7 +972,7 @@ High-Res Visual (.png + .pdf):   300-DPI Multi-Panel Post-Market Safety &amp; Tr
   "pipeline": "Sentinel Unified RA / Clinical Pack",
   "generated_utc": "2026-11-11T21:00:00+00:00",
   "verification_rule": "sha256_file_digest == manifest.artifacts[].sha256",
-  "zero_fabrication_policy": "#FFF2CC highlighted for any incomplete primary-source record"
+  "zero_fabrication_policy": "Amber manual-QA flag applied to any incomplete primary-source record"
 }</pre>
           </div>
         </div>"""
@@ -917,12 +1007,12 @@ def render_live_check_section_html() -> str:
               <p class="lang-en">Checks live <code>_dmarc</code>, <code>v=spf1</code> RFC 7208 10-lookup pressure, and <code>_mta-sts</code> TXT records via Google DoH.</p>
               <p class="lang-fr">V&eacute;rifie en direct vos champs <code>_dmarc</code>, le plafond 10 requ&ecirc;tes SPF (RFC 7208) et <code>_mta-sts</code> via Google DoH.</p>
               <div class="live-input-row">
-                <input id="lc-domain-input" type="text" value="example-medtech.ch" placeholder="e.g. yourcompany.ch" aria-label="Domain to check via Google DoH" />
+                <input id="lc-domain-input" type="text" value="example-medtech.ch" placeholder="e.g. yourcompany.ch" data-ph-en="e.g. yourcompany.ch" data-ph-fr="ex. votre-societe.ch" aria-label="Domain to check via Google DoH" />
                 <button type="button" class="btn-primary" onclick="runDnsPrecheck();">
                   <span class="lang-en">Check DNS</span><span class="lang-fr">Tester</span>
                 </button>
               </div>
-              <div id="lc-dns-out" class="live-result">Click "Check DNS" to query public DMARC / SPF / MTA-STS TXT records.</div>
+              <div id="lc-dns-out" class="live-result" data-en='Click "Check DNS" to query public DMARC / SPF / MTA-STS / CAA records.' data-fr='Cliquez sur « Tester » pour interroger les enregistrements publics DMARC / SPF / MTA-STS / CAA.'>Click "Check DNS" to query public DMARC / SPF / MTA-STS / CAA records.</div>
             </div>
             <button type="button" class="btn-outline" onclick="prefillFromLiveCheck('Track 01 - Sentinel 25-Control External Audit', document.getElementById('lc-domain-input').value, lastLiveSummary.dns);">
               <span class="lang-en">Use Result in 1-Page Audit Form &rarr;</span>
@@ -940,12 +1030,12 @@ def render_live_check_section_html() -> str:
               <p class="lang-en">Queries official <code>api.fda.gov/device/event.json</code> for total indexed Malfunction, Injury, and Death counts.</p>
               <p class="lang-fr">Interroge l'API officielle <code>api.fda.gov/device/event.json</code> pour les r&eacute;partitions pannes, blessures et d&eacute;c&egrave;s.</p>
               <div class="live-input-row">
-                <input id="lc-fda-input" type="text" value="insulin pump" placeholder="e.g. cardiac catheter" aria-label="Medical device term for OpenFDA MAUDE" />
+                <input id="lc-fda-input" type="text" value="insulin pump" placeholder="e.g. cardiac catheter" data-ph-en="e.g. cardiac catheter or LZG" data-ph-fr="ex. catheter cardiaque ou LZG" aria-label="Medical device term for OpenFDA MAUDE" />
                 <button type="button" class="btn-primary" onclick="runFdaPrecheck();">
                   <span class="lang-en">Query FDA</span><span class="lang-fr">Tester</span>
                 </button>
               </div>
-              <div id="lc-fda-out" class="live-result">Click "Query FDA" to summarize public MAUDE event classifications.</div>
+              <div id="lc-fda-out" class="live-result" data-en='Click "Query FDA" to summarize public MAUDE event classifications.' data-fr='Cliquez sur « Tester » pour r&eacute;sumer les signalements publics MAUDE.'>Click "Query FDA" to summarize public MAUDE event classifications.</div>
             </div>
             <button type="button" class="btn-outline" onclick="prefillFromLiveCheck('Track 02 - OpenFDA MAUDE & PSUR Surveillance', document.getElementById('lc-fda-input').value, lastLiveSummary.fda);">
               <span class="lang-en">Use Term for 1-Page PSUR Preview &rarr;</span>
@@ -963,12 +1053,12 @@ def render_live_check_section_html() -> str:
               <p class="lang-en">Surfaces real peer-reviewed hit counts and top indexed PMIDs from EMBL-EBI Europe PMC for your CER topic.</p>
               <p class="lang-fr">Affiche le nombre d'articles et les premiers PMIDs index&eacute;s sur EMBL-EBI Europe PMC pour votre th&egrave;me clinique.</p>
               <div class="live-input-row">
-                <input id="lc-epmc-input" type="text" value="GLP-1 renal outcomes" placeholder="e.g. coronary stent outcomes" aria-label="Clinical topic for Europe PMC search" />
+                <input id="lc-epmc-input" type="text" value="GLP-1 renal outcomes" placeholder="e.g. coronary stent outcomes" data-ph-en="e.g. coronary stent outcomes" data-ph-fr="ex. stent coronarien CER" aria-label="Clinical topic for Europe PMC search" />
                 <button type="button" class="btn-primary" onclick="runEpmcPrecheck();">
                   <span class="lang-en">Search EPMC</span><span class="lang-fr">Chercher</span>
                 </button>
               </div>
-              <div id="lc-epmc-out" class="live-result">Click "Search EPMC" to preview live PubMed / Europe PMC matches.</div>
+              <div id="lc-epmc-out" class="live-result" data-en='Click "Search EPMC" to preview live PubMed / Europe PMC matches.' data-fr='Cliquez sur « Chercher » pour apercevoir les notices PubMed / Europe PMC.'>Click "Search EPMC" to preview live PubMed / Europe PMC matches.</div>
             </div>
             <button type="button" class="btn-outline" onclick="prefillFromLiveCheck('Track 03 - PRISMA 2020 Clinical Evidence & Table 1', document.getElementById('lc-epmc-input').value, lastLiveSummary.epmc);">
               <span class="lang-en">Use Query for 1-Page PRISMA Preview &rarr;</span>
@@ -1014,6 +1104,13 @@ def _render_seo_guide_html(
   <title>__TITLE_EN__ &mdash; __BRAND__</title>
   <meta name="description" content="__META_DESC__" />
   <link rel="canonical" href="__CANONICAL__" />
+  <link rel="icon" type="image/png" href="assets/sentinel_avatar_github.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="__TITLE_EN__ — __BRAND__" />
+  <meta property="og:description" content="__META_DESC__" />
+  <meta property="og:url" content="__CANONICAL__" />
+  <meta property="og:image" content="__WEBSITE__/assets/sentinel_logo_full.png" />
+  <meta name="twitter:card" content="summary_large_image" />
   <style>
     :root { --navy:#0F172A; --teal:#0F766E; --slate:#F8FAFC; --border:#E2E8F0; --muted:#475569; }
     * { box-sizing:border-box; }
@@ -1051,7 +1148,7 @@ def _render_seo_guide_html(
         <a href="prisma-2020.html">PRISMA 2020</a>
         <a href="terms.html">Terms</a>
         <a href="cgv.html">CGV</a>
-        <button type="button" class="lang-btn" onclick="var f=!document.body.classList.contains('is-fr');document.body.classList.toggle('is-fr',f);this.textContent=f?'EN':'FR';">FR</button>
+        <button type="button" class="lang-btn" id="seo-lang-btn" onclick="var f=!document.body.classList.contains('is-fr');document.body.classList.toggle('is-fr',f);document.documentElement.lang=f?'fr':'en';this.textContent=f?'EN':'FR';try{localStorage.setItem('sentinel_lang',f?'fr':'en');}catch(e){}">FR</button>
       </div>
     </nav>
   </header>
@@ -1070,8 +1167,11 @@ def _render_seo_guide_html(
     </article>
   </main>
   <footer>
-    <span>Contact: <a href="mailto:__EMAIL__">__EMAIL__</a> &middot; <a href="privacy.html">Privacy (GDPR / nFADP)</a> &middot; <a href="sitemap.xml">Sitemap</a></span>
+    <span><a href="index.html">Home</a> &middot; <a href="terms.html">Terms (EN)</a> &middot; <a href="cgv.html">CGV (FR)</a> &middot; <a href="privacy.html">Privacy (GDPR / nFADP)</a> &middot; <a href="sitemap.xml">Sitemap</a> &middot; Contact: <a href="mailto:__EMAIL__">__EMAIL__</a></span>
   </footer>
+  <script>
+    (function(){try{var q=new URLSearchParams(window.location.search||'').get('lang');var s=(q==='fr'||q==='en')?q:(localStorage.getItem('sentinel_lang')||'en');if(s==='fr'){document.body.classList.add('is-fr');document.documentElement.lang='fr';var b=document.getElementById('seo-lang-btn');if(b)b.textContent='EN';}}catch(e){}})();
+  </script>
 </body>
 </html>
 """
@@ -1080,6 +1180,7 @@ def _render_seo_guide_html(
         .replace("__TITLE_FR__", html.escape(title_fr))
         .replace("__BRAND__", html.escape(brand))
         .replace("__META_DESC__", html.escape(meta_desc))
+        .replace("__WEBSITE__", html.escape(website))
         .replace("__CANONICAL__", html.escape(f"{website}/{filename}"))
         .replace("__EYEBROW__", html.escape(eyebrow))
         .replace("__LEAD_EN__", html.escape(lead_en))
@@ -1141,13 +1242,13 @@ def render_seo_pages(cfg: dict[str, Any], target: Path) -> dict[str, Path]:
                     ("Monthly Z-Score Signal Spike Alerts (Z >= 2.0)", "Computes chronological monthly MAUDE baseline mean and standard deviation to surface statistically abnormal event spikes."),
                     ("Predicate 510(k) & FDA Recall Stratification", "Consolidates K-numbers, decision dates, and Class I/II/III enforcement records into filterable Excel tables."),
                     ("ClinicalTrials.gov v2 Clickable PMCF Registry", "Pairs live interventional and observational study NCT links with sponsor, phase, status, and enrollment counts."),
-                    ("ALCOA+ Provenance & Zero Guesses", "Blank narratives or unmapped FDA device codes are clearly shaded #FFF2CC with timestamped API query metadata."),
+                    ("ALCOA+ Provenance & Zero Guesses", "Blank narratives or unmapped FDA device codes are clearly shaded in soft amber with timestamped API query metadata."),
                 ],
                 "bullets_fr": [
                     ("Alertes Statistiques Mensuelles Z-Score (Z >= 2.0)", "Agrège les séries mensuelles OpenFDA MAUDE pour détecter automatiquement les pics anormaux de signalement."),
                     ("Historique 510(k) & Rappels Produits FDA", "Consolide les numéros K, dates de décision et classes de rappel dans un classeur Excel filtrable."),
                     ("Registre PMCF ClinicalTrials.gov v2 Cliquable", "Relie directement chaque étude clinique active/terminée par lien NCT officiel avec promoteur et effectifs."),
-                    ("Traçabilité ALCOA+ & Zéro Donnée Inventée", "Tout champ source manquant reste surligné #FFF2CC avec horodatage exact des requêtes API."),
+                    ("Traçabilité ALCOA+ & Zéro Donnée Inventée", "Tout champ source manquant reste surligné ambre pour revue QA avec horodatage exact des requêtes API."),
                 ],
                 "sample_zip_rel": "samples/pms_cgm_class_iib_sample.zip",
                 "sample_label_en": "Download CGM PSUR Sample ZIP",
@@ -1169,13 +1270,13 @@ def render_seo_pages(cfg: dict[str, Any], target: Path) -> dict[str, Path]:
                     ("Conserved PRISMA 2020 Arithmetic Flow", "Strict N_identified - N_dup - N_excluded = N_included verification baked into Excel COUNTIFS and 300-DPI PNG/PDF diagrams."),
                     ("Ready-to-Import .ris & .bib Reference Files", "Every pack ships UTF-8 .ris (EndNote / Zotero) and .bib (LaTeX / JabRef) libraries built from included PubMed/Europe PMC studies."),
                     ("Study-Design Risk-of-Bias Framework Summary", "Automatically maps randomized (RoB 2), observational (NOS), and appraisal (JBI) counts without inventing unverified scores."),
-                    ("ICH E6/E9 Cohort Table 1 & #FFF2CC QA Flags", "Includes Shapiro-Wilk parametric/non-parametric summary workbook alongside full Word Vancouver dossier."),
+                    ("ICH E6/E9 Cohort Table 1 & Amber QA Flags", "Includes Shapiro-Wilk parametric/non-parametric summary workbook alongside full Word Vancouver dossier."),
                 ],
                 "bullets_fr": [
                     ("Équation PRISMA 2020 Vérifiée par Formules", "Conservation arithmétique stricte intégrée aux formules COUNTIFS Excel et au diagramme 300 DPI PNG/PDF."),
                     ("Exports .ris (Zotero / EndNote) & .bib (BibTeX)", "Chaque livraison inclut les fichiers bibliographiques UTF-8 prêts à importer depuis les études retenues."),
                     ("Cartographie Biais par Schéma (RoB 2 / NOS)", "Agrège automatiquement les cadres d'évaluation adaptés aux essais randomisés et études observationnelles."),
-                    ("Table 1 Biostatistiques ICH E9 & Contrôle #FFF2CC", "Inclut les tests de normalité Shapiro-Wilk et le dossier Word Vancouver avec DOI cliquables."),
+                    ("Table 1 Biostatistiques ICH E9 & Surlignage Ambre QA", "Inclut les tests de normalité Shapiro-Wilk et le dossier Word Vancouver avec DOI cliquables."),
                 ],
                 "sample_zip_rel": "samples/prisma_glp1_clinical_sample.zip",
                 "sample_label_en": "Download PRISMA & .ris/.bib Sample ZIP",
@@ -1269,6 +1370,13 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
   <title>{html.escape(brand)} — EU MDR, Swiss nFADP &amp; Clinical Evidence Automation</title>
   <meta name="description" content="Audit-ready EU MDR PSUR/MAUDE surveillance, PRISMA 2020 clinical evidence tables, Swiss nFADP/GDPR passive domain posture audits, and eCTD cross-check packs delivered in 48 hours." />
   <link rel="canonical" href="{html.escape(website)}/" />
+  <link rel="icon" type="image/png" href="assets/sentinel_avatar_github.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="{html.escape(brand)} — EU MDR, Swiss nFADP &amp; Clinical Evidence" />
+  <meta property="og:description" content="Audit-ready EU MDR PSUR/MAUDE surveillance, PRISMA 2020 clinical evidence tables, Swiss nFADP/GDPR passive posture audits, and eCTD packs delivered in 48h." />
+  <meta property="og:url" content="{html.escape(website)}/" />
+  <meta property="og:image" content="{html.escape(website)}/assets/sentinel_logo_full.png" />
+  <meta name="twitter:card" content="summary_large_image" />
   <script type="application/ld+json">{schema_json}</script>
   <style>
     :root {{
@@ -1287,7 +1395,7 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
       --amber-fg: #92400E;
     }}
     * {{ box-sizing: border-box; }}
-    html {{ scroll-behavior: smooth; }}
+    html {{ scroll-behavior: smooth; overflow-x: clip; max-width: 100%; }}
     code {{
       background: #F1F5F9;
       border: 1px solid #E2E8F0;
@@ -1296,9 +1404,12 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 0.88em;
       color: var(--navy);
+      overflow-wrap: anywhere;
     }}
     body {{
       margin: 0;
+      overflow-x: clip;
+      max-width: 100%;
       background: var(--slate-bg);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -1344,16 +1455,36 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
     .brand-link {{
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       text-decoration: none;
       color: var(--navy);
-      font-weight: 700;
-      font-size: 16px;
     }}
     .brand-link img {{
-      height: 36px;
-      width: auto;
+      height: 34px;
+      width: 34px;
+      border-radius: 6px;
+      object-fit: cover;
       display: block;
+      flex: 0 0 auto;
+    }}
+    .brand-text {{
+      display: flex;
+      flex-direction: column;
+    }}
+    .brand-name {{
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.9px;
+      line-height: 1.05;
+      color: var(--navy);
+    }}
+    .brand-sub {{
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      color: var(--teal);
+      line-height: 1.15;
     }}
     .nav-right {{
       display: flex;
@@ -1433,19 +1564,21 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
     }}
     .hero-actions {{
       display: flex;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
+      align-items: center;
       margin-bottom: 22px;
     }}
     .btn-primary {{
       display: inline-block;
       background: var(--teal);
       color: #FFFFFF;
-      padding: 12px 22px;
+      padding: 11px 18px;
       border-radius: 6px;
       text-decoration: none;
       font-weight: 700;
-      font-size: 14.5px;
+      font-size: 14px;
+      white-space: nowrap;
       border: 1px solid var(--teal);
       cursor: pointer;
     }}
@@ -1454,11 +1587,12 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
       display: inline-block;
       background: #FFFFFF;
       color: var(--navy);
-      padding: 11px 18px;
+      padding: 11px 15px;
       border-radius: 6px;
       text-decoration: none;
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13.5px;
+      white-space: nowrap;
       border: 1px solid var(--border);
     }}
     .btn-outline:hover {{ border-color: var(--teal); color: var(--teal); }}
@@ -1525,7 +1659,8 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 12px;
+      flex-wrap: wrap;
+      gap: 10px 12px;
       margin-bottom: 10px;
     }}
     .offer-tag {{
@@ -1594,7 +1729,7 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
       gap: 28px;
       align-items: start;
     }}
-    .form-row {{ margin-bottom: 12px; }}
+    .form-row {{ margin-bottom: 12px; min-width: 0; max-width: 100%; }}
     .form-row label {{
       display: block;
       font-size: 13px;
@@ -1604,6 +1739,8 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
     }}
     .form-row input, .form-row select, .form-row textarea {{
       width: 100%;
+      min-width: 0;
+      max-width: 100%;
       padding: 9px 11px;
       border: 1px solid var(--border);
       border-radius: 5px;
@@ -1641,8 +1778,30 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
     {_specimen_inspector_css()}
     {_live_check_css()}
 
+    .hero-grid > *, .offers-grid > *, .gallery-grid > *, .intake-box > *, .ch-fr-strip > *, .live-grid > *,
+    .offer-card, .live-card, .hero-card, .specimen, .jurisdiction-card,
+    .specimen-inspector, .table-wrap, .spec-snippet {{
+      min-width: 0;
+      max-width: 100%;
+    }}
+
     @media (max-width: 860px) {{
       .hero-grid, .offers-grid, .gallery-grid, .intake-box {{ grid-template-columns: 1fr; }}
+    }}
+    @media (max-width: 560px) {{
+      .topbar, nav.nav, .container {{ padding-left: 16px; padding-right: 16px; }}
+      .hero {{ padding: 28px 0 26px 0; }}
+      .intake-box, .hero-card, .offer-card, .live-card, .spec-panel {{ padding: 16px; }}
+      .spec-head-bar, .spec-tabs {{ padding: 12px 16px; }}
+      h1 {{ font-size: 26px; overflow-wrap: break-word; }}
+      .hero-actions .btn-primary, .hero-actions .btn-outline, .btn-sample-dl {{
+        white-space: normal;
+        text-align: center;
+        max-width: 100%;
+      }}
+      .live-input-row {{ flex-direction: column; }}
+      .live-input-row .btn-primary {{ width: 100%; text-align: center; }}
+      .spec-table th {{ white-space: normal; }}
     }}
   </style>
 </head>
@@ -1661,7 +1820,12 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
   <header class="nav-wrap">
     <nav class="nav" aria-label="Main Navigation">
       <a class="brand-link" href="#top">
-        <img src="assets/sentinel_logo_editorial.png" alt="Sentinel Regulatory &amp; Technical Operations" />
+        <img src="assets/sentinel_avatar_github.png" alt="Sentinel Mark" />
+        <span class="brand-text">
+          <span class="brand-name">SENTINEL</span>
+          <span class="brand-sub lang-en">Regulatory &amp; Technical Ops</span>
+          <span class="brand-sub lang-fr">Op&eacute;rations R&eacute;glementaires</span>
+        </span>
       </a>
       <div class="nav-right">
         <div class="nav-links">
@@ -1700,23 +1864,35 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
           </p>
           <div class="hero-actions">
             <a class="btn-primary" href="#intake">
-              <span class="lang-en">Request Complimentary 1-Page Scope Preview</span>
-              <span class="lang-fr">Demander un Aperçu Gratuit (1 Page)</span>
+              <span class="lang-en">Request Free 1-Page Preview</span>
+              <span class="lang-fr">Demander l'Aper&ccedil;u Gratuit</span>
             </a>
             <a class="btn-outline" href="#live-check">
-              <span class="lang-en">Run Live Pre-Check</span>
-              <span class="lang-fr">Tester en Direct</span>
+              <span class="lang-en">Live Pre-Check</span>
+              <span class="lang-fr">Test en Direct</span>
             </a>
             <a class="btn-outline" href="#offers">
-              <span class="lang-en">Inspect Fixed-Fee Packages</span>
+              <span class="lang-en">Packages &amp; Pricing</span>
               <span class="lang-fr">Voir les Forfaits</span>
             </a>
           </div>
           <div class="trust-strip">
-            <span class="pill">100% Passive DNS/TLS/HTTPS (StGB Art. 143bis)</span>
-            <span class="pill">OpenFDA Z-Score Spikes &amp; CT.gov v2</span>
-            <span class="pill">PRISMA 2020 + .ris/.bib + RoB</span>
-            <span class="pill">#FFF2CC Zero-Fabrication QA Flagging</span>
+            <span class="pill">
+              <span class="lang-en">100% Passive DNS/TLS/HTTPS (StGB Art. 143bis)</span>
+              <span class="lang-fr">Audit 100% Passif DNS/TLS/HTTPS (CP art. 143bis)</span>
+            </span>
+            <span class="pill">
+              <span class="lang-en">OpenFDA Z-Score Spikes &amp; CT.gov v2</span>
+              <span class="lang-fr">Signaux Z-Score OpenFDA &amp; CT.gov v2</span>
+            </span>
+            <span class="pill">
+              <span class="lang-en">PRISMA 2020 + RIS/BibTeX &amp; RoB 2</span>
+              <span class="lang-fr">PRISMA 2020 + RIS/BibTeX &amp; RoB 2</span>
+            </span>
+            <span class="pill">
+              <span class="lang-en">Amber QA Flagging &mdash; Zero Fabrication</span>
+              <span class="lang-fr">Alertes QA Ambre &mdash; Z&eacute;ro Fabrication</span>
+            </span>
           </div>
         </div>
 
@@ -1726,15 +1902,15 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
             <span class="lang-fr">Inclus dans Chaque Dossier Clé en Main</span>
           </h2>
           <ul class="lang-en">
-            <li><strong>Landscape Word Executive Dossier (<code>.docx</code>):</strong> Ready for internal PRRC, Notified Body, or vendor due diligence review.</li>
-            <li><strong>Multi-Sheet Filterable Excel Register (<code>.xlsx</code>):</strong> Frozen headers, AutoFilters, formulas, and <code>#FFF2CC</code> QA flags for unverified items.</li>
-            <li><strong>300-DPI Boardroom Visual Brief (<code>.png</code> &amp; <code>.pdf</code>):</strong> Print-grade scorecard, PSUR safety radar, or PRISMA 2020 flowchart.</li>
+            <li><strong>Landscape Word Executive Dossier (.docx):</strong> Ready for internal PRRC, Notified Body, or vendor due diligence review.</li>
+            <li><strong>Multi-Sheet Filterable Excel Register (.xlsx):</strong> Frozen headers, AutoFilters, live formulas, and amber QA flags for unverified items.</li>
+            <li><strong>300-DPI Boardroom Visual Brief (.png &amp; .pdf):</strong> Print-grade scorecard, PSUR safety radar, or PRISMA 2020 flowchart.</li>
             <li><strong>ALCOA+ SHA-256 Manifest &amp; Turnkey Fixes:</strong> Reproducible query provenance plus copy-paste Nginx, Cloudflare, and DMARC/SPF DNS configs.</li>
           </ul>
           <ul class="lang-fr">
-            <li><strong>Dossier Exécutif Word Paysage (<code>.docx</code>) :</strong> Prêt pour relecture PRRC, Organisme Notifié ou audit fournisseur.</li>
-            <li><strong>Classeur Excel Filtrable Multi-Onglets (<code>.xlsx</code>) :</strong> Formules actives, liens DOI/NCT cliquables et drapeaux QA <code>#FFF2CC</code>.</li>
-            <li><strong>Synthèse Visuelle 300 DPI (<code>.png</code> &amp; <code>.pdf</code>) :</strong> Scorecard sécurité, radar MAUDE ou diagramme PRISMA 2020 haute résolution.</li>
+            <li><strong>Dossier Exécutif Word Paysage (.docx) :</strong> Prêt pour relecture PRRC, Organisme Notifié ou audit fournisseur.</li>
+            <li><strong>Classeur Excel Filtrable Multi-Onglets (.xlsx) :</strong> Formules actives, liens DOI/NCT cliquables et drapeaux QA ambre pour v&eacute;rification humaine.</li>
+            <li><strong>Synthèse Visuelle 300 DPI (.png &amp; .pdf) :</strong> Scorecard sécurité, radar MAUDE ou diagramme PRISMA 2020 haute résolution.</li>
             <li><strong>Manifeste ALCOA+ SHA-256 &amp; Correctifs IT :</strong> Preuve d'extraction horodatée et configurations Nginx, Cloudflare et DNS DMARC/SPF prêtes à déployer.</li>
           </ul>
         </aside>
@@ -1783,7 +1959,10 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
           <article class="offer-card">
             <div>
               <div class="offer-top">
-                <span class="offer-tag">Track 01 &middot; Cyber, Privacy &amp; DMARC</span>
+                <span class="offer-tag">
+                  <span class="lang-en">Track 01 &middot; Cyber, Privacy &amp; DMARC</span>
+                  <span class="lang-fr">Module 01 &middot; Cyber, nLPD/RGPD &amp; DMARC</span>
+                </span>
                 <span class="price-badge">EUR 350–450 &middot; CHF 350</span>
               </div>
               <h3>
@@ -1791,11 +1970,16 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
                 <span class="lang-fr">Audit Externe 25 Contrôles : Vie Privée, DMARC &amp; Sécurité Edge</span>
               </h3>
               <p class="lang-en">Passive check of DMARC, recursive SPF (&gt;10 lookup PermError risk), MTA-STS, pre-consent US Google Fonts / tracker leaks (Swiss nFADP / EU GDPR Art. 44), TLS/HSTS/CSP edge headers, and WCAG 2.1 AA readiness.</p>
-              <p class="lang-fr">Analyse strictement passive des risques DMARC, plafond 10 requêtes SPF, MTA-STS, fuites IP avant consentement (nFADP suisse / RGPD art. 44), en-têtes TLS/HSTS/CSP et accessibilité WCAG 2.1 AA.</p>
-              <ul>
+              <p class="lang-fr">Analyse strictement passive des risques DMARC, plafond 10 requêtes SPF, MTA-STS, fuites IP avant consentement (nLPD suisse / RGPD art. 44), en-têtes TLS/HSTS/CSP et accessibilité WCAG 2.1 AA.</p>
+              <ul class="lang-en">
                 <li>Word Executive Audit + 4-Sheet Excel Risk Matrix</li>
                 <li>Ready-to-paste DNS (DMARC/SPF/CAA), Nginx &amp; Cloudflare <code>_headers</code></li>
                 <li>1 complimentary verification re-scan within 14 days</li>
+              </ul>
+              <ul class="lang-fr">
+                <li>Rapport Word Ex&eacute;cutif + Classeur Excel Risques (4 onglets)</li>
+                <li>Fichiers DNS (DMARC/SPF/CAA), Nginx &amp; Cloudflare <code>_headers</code> pr&ecirc;ts &agrave; coller</li>
+                <li>1 contre-visite de validation offerte sous 14 jours</li>
               </ul>
             </div>
             {_cta_button("sentinel_compliance", "Request Track 01 Scope", "Commander / Aperçu Module 01", "Track 01 - Sentinel 25-Control External Audit")}
@@ -1804,7 +1988,10 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
           <article class="offer-card">
             <div>
               <div class="offer-top">
-                <span class="offer-tag">Track 02 &middot; EU MDR Art. 83–86 PMS</span>
+                <span class="offer-tag">
+                  <span class="lang-en">Track 02 &middot; EU MDR Art. 83–86 PMS</span>
+                  <span class="lang-fr">Module 02 &middot; Surveillance PMS / PSUR MDR</span>
+                </span>
                 <span class="price-badge">EUR 650 &middot; CHF 690</span>
               </div>
               <h3>
@@ -1813,10 +2000,15 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
               </h3>
               <p class="lang-en">Automates FDA MAUDE event stratification (Malfunction, Injury, Death, monthly Z-score signal spikes), predicate 510(k)/recall tracking, and active/completed PMCF trial links under MDCG 2022-21.</p>
               <p class="lang-fr">Structuration automatisée des rapports MAUDE (pannes, blessures, décès, pics statistiques mensuels Z-score), rappels/510(k) et études PMCF actives sous Règlement UE MDR &amp; MDCG 2022-21.</p>
-              <ul>
+              <ul class="lang-en">
                 <li>Landscape Word PSUR Surveillance Draft + 300-DPI Dashboard</li>
                 <li>4-Sheet Excel Workbook with Monthly Spike Alerts &amp; <code>NCTId</code> Links</li>
                 <li>Documented API query snapshot &amp; ALCOA+ SHA-256 manifest</li>
+              </ul>
+              <ul class="lang-fr">
+                <li>Projet PSUR Word Paysage + Tableau de Bord 300 DPI</li>
+                <li>Classeur Excel 4 onglets avec alertes Z-score et liens <code>NCTId</code></li>
+                <li>Journal de requ&ecirc;tes API horodat&eacute; &amp; manifeste ALCOA+ SHA-256</li>
               </ul>
             </div>
             {_cta_button("pms_openfda_psur", "Request Track 02 Scope", "Commander / Aperçu Module 02", "Track 02 - OpenFDA MAUDE & PSUR Surveillance")}
@@ -1825,19 +2017,27 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
           <article class="offer-card">
             <div>
               <div class="offer-top">
-                <span class="offer-tag">Track 03 &middot; EU MDR Annex XIV / CER</span>
+                <span class="offer-tag">
+                  <span class="lang-en">Track 03 &middot; EU MDR Annex XIV / CER</span>
+                  <span class="lang-fr">Module 03 &middot; Revue Clinique CER / PRISMA</span>
+                </span>
                 <span class="price-badge">EUR 750 &middot; CHF 790</span>
               </div>
               <h3>
                 <span class="lang-en">PRISMA 2020 Literature Synthesis &amp; ICH E9 Table 1 Pack</span>
                 <span class="lang-fr">Revue Systématique PRISMA 2020, CER &amp; Table 1 Biostatistiques</span>
               </h3>
-              <p class="lang-en">Dual-source NCBI PubMed + Europe PMC literature screening with verified PRISMA arithmetic conservation, RoB 2 / NOS mapping, Zotero/EndNote <code>.ris</code> &amp; <code>.bib</code> files, and optional ICH E9 Table 1 cohort stats.</p>
-              <p class="lang-fr">Criblage documentaire PubMed / Europe PMC avec équation PRISMA 2020 vérifiée, cartographie RoB 2 / NOS, exports <code>.ris</code> / <code>.bib</code> pour Zotero/EndNote et Table 1 biostatistiques ICH E9.</p>
-              <ul>
+              <p class="lang-en">Dual-source NCBI PubMed + Europe PMC literature screening with verified PRISMA arithmetic conservation, RoB 2 / NOS mapping, Zotero/EndNote .ris &amp; .bib exports, and optional ICH E9 Table 1 cohort stats.</p>
+              <p class="lang-fr">Criblage documentaire PubMed / Europe PMC avec équation PRISMA 2020 vérifiée, cartographie RoB 2 / NOS, exports .ris / .bib pour Zotero/EndNote et Table 1 biostatistiques ICH E9.</p>
+              <ul class="lang-en">
                 <li>Vancouver-Cited Word Table + 300-DPI PRISMA 2020 Flow Diagram</li>
-                <li>4-Sheet Excel Matrix (<code>COUNTIFS</code> formulas &amp; <code>#FFF2CC</code> QA flags)</li>
-                <li>Ready-to-import <code>.ris</code> / <code>.bib</code> citations — zero invented data</li>
+                <li>4-Sheet Excel Matrix (<code>COUNTIFS</code> formulas &amp; amber QA flags)</li>
+                <li>Ready-to-import .ris / .bib citations &mdash; zero invented data</li>
+              </ul>
+              <ul class="lang-fr">
+                <li>Tableau clinique Word (style Vancouver) + diagramme PRISMA 300 DPI</li>
+                <li>Matrice Excel 4 onglets (formules <code>COUNTIFS</code> &amp; drapeaux QA ambre)</li>
+                <li>Citations .ris / .bib pr&ecirc;tes pour Zotero &mdash; z&eacute;ro donn&eacute;e invent&eacute;e</li>
               </ul>
             </div>
             {_cta_button("clinical_lit_prisma", "Request Track 03 Scope", "Commander / Aperçu Module 03", "Track 03 - PRISMA 2020 Clinical Evidence & Table 1")}
@@ -1846,19 +2046,27 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
           <article class="offer-card">
             <div>
               <div class="offer-top">
-                <span class="offer-tag">Track 04 &middot; Full Dossier &amp; eCTD</span>
+                <span class="offer-tag">
+                  <span class="lang-en">Track 04 &middot; Full Dossier &amp; eCTD</span>
+                  <span class="lang-fr">Module 04 &middot; Dossier Unifi&eacute; &amp; eCTD</span>
+                </span>
                 <span class="price-badge">EUR 950–1,100 &middot; CHF 1,150</span>
               </div>
               <h3>
                 <span class="lang-en">Unified MedTech Suite &amp; eCTD M1–M5 Gatekeeper Pack</span>
                 <span class="lang-fr">Suite Unifiée MedTech &amp; Linter Réglementaire eCTD M1–M5</span>
               </h3>
-              <p class="lang-en">Combines full external posture review + clinical PRISMA 2020 CER pack, OR delivers our 6-sheet RA Command Center (Upstream SLA Blame-Shield, Agency Drift Radar, eCTD N-count cross-check linter).</p>
+              <p class="lang-en">Combines full external posture review + clinical PRISMA 2020 CER pack, OR delivers our 6-sheet RA Command Center (Upstream SLA Attribution, Agency Drift Radar, eCTD N-count cross-check linter).</p>
               <p class="lang-fr">Combine l'audit externe + dossier clinique PRISMA 2020, ou déploie le Centre de Commande AR à 6 onglets (suivi SLA inter-départements, veille FDA/EMA, contrôle croisé eCTD M1–M5).</p>
-              <ul>
+              <ul class="lang-en">
                 <li><code>00_Unified_Executive_Brief.docx</code> + Combined Track Directories</li>
                 <li>6-Sheet eCTD &amp; Upstream Delay Attribution Register</li>
                 <li>Full SHA-256 ALCOA+ Provenance &amp; Signed QA Sign-Off Checklist</li>
+              </ul>
+              <ul class="lang-fr">
+                <li><code>00_Unified_Executive_Brief.docx</code> + dossiers complets regroup&eacute;s</li>
+                <li>Classeur eCTD &amp; suivi retards inter-services (6 onglets)</li>
+                <li>Manifeste ALCOA+ SHA-256 complet &amp; check-list de revue Qualit&eacute;/PRRC</li>
               </ul>
             </div>
             {_cta_button("unified_dossier", "Request Unified Scope", "Commander / Aperçu Pack Unifié", "Track 04 - Unified Dossier / eCTD RA Command")}
@@ -1887,8 +2095,12 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
               <img src="assets/Sentinel_25_Control_Evaluation_System.png" alt="Sentinel 25-Control Passive External Assessment Specification Sheet" />
             </a>
             <div class="specimen-body">
-              <h3>Sentinel 25-Control Specification</h3>
-              <p>DMARC/SPF, nFADP/GDPR pre-consent trackers, HTTP headers &amp; WCAG 2.1 AA.</p>
+              <h3>
+                <span class="lang-en">Sentinel 25-Control Specification</span>
+                <span class="lang-fr">Sp&eacute;cification Sentinel 25 Contr&ocirc;les</span>
+              </h3>
+              <p class="lang-en">DMARC/SPF, nFADP/GDPR pre-consent trackers, HTTP headers &amp; WCAG 2.1 AA.</p>
+              <p class="lang-fr">DMARC/SPF, traceurs nLPD/RGPD avant consentement, en-t&ecirc;tes HTTP &amp; WCAG 2.1 AA.</p>
             </div>
           </article>
           <article class="specimen">
@@ -1896,8 +2108,12 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
               <img src="assets/PMS_MAUDE_PSUR_Evaluation_System.png" alt="Automated OpenFDA MAUDE and ClinicalTrials.gov PSUR Framework Sheet" />
             </a>
             <div class="specimen-body">
-              <h3>OpenFDA MAUDE &amp; PSUR Framework</h3>
-              <p>EU MDR Art. 83–86 event stratification, 510(k)/recall logs &amp; ClinicalTrials v2 links.</p>
+              <h3>
+                <span class="lang-en">OpenFDA MAUDE &amp; PSUR Framework</span>
+                <span class="lang-fr">Architecture OpenFDA MAUDE &amp; PSUR</span>
+              </h3>
+              <p class="lang-en">EU MDR Art. 83–86 event stratification, 510(k)/recall logs &amp; ClinicalTrials v2 links.</p>
+              <p class="lang-fr">Stratification MDR Art. 83–86, rappels/510(k) et liens ClinicalTrials v2.</p>
             </div>
           </article>
           <article class="specimen">
@@ -1905,8 +2121,12 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
               <img src="assets/Clinical_Literature_Biostats_Evaluation_System.png" alt="PRISMA 2020 Clinical Literature, Biostatistics Table 1 and RefSeq QC Suite" />
             </a>
             <div class="specimen-body">
-              <h3>PRISMA 2020 &amp; Biostats Suite</h3>
-              <p>Europe PMC/PubMed deduplication, conserved flowcharts, Table 1 &amp; <code>#FFF2CC</code> QA audit.</p>
+              <h3>
+                <span class="lang-en">PRISMA 2020 &amp; Biostats Suite</span>
+                <span class="lang-fr">Suite PRISMA 2020 &amp; Biostatistiques</span>
+              </h3>
+              <p class="lang-en">Europe PMC/PubMed deduplication, conserved flowcharts, Table 1 &amp; amber QA audit flags.</p>
+              <p class="lang-fr">D&eacute;doublonnage Europe PMC/PubMed, diagrammes conservatifs, Table 1 &amp; drapeaux QA ambre.</p>
             </div>
           </article>
         </div>
@@ -1941,24 +2161,24 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
           <form onsubmit="return handleIntakeSubmit(event);">
             <div class="form-row">
               <label for="f-company"><span class="lang-en">Company / Organization</span><span class="lang-fr">Société / Organisation</span></label>
-              <input id="f-company" type="text" required placeholder="e.g. Helvetia MedTech AG" />
+              <input id="f-company" type="text" required placeholder="e.g. Helvetia MedTech AG" data-ph-en="e.g. Helvetia MedTech AG" data-ph-fr="ex. Helvetia MedTech SA" />
             </div>
             <div class="form-row">
               <label for="f-domain"><span class="lang-en">Corporate Domain or Product / Topic</span><span class="lang-fr">Domaine Web ou Dispositif / Sujet Clinique</span></label>
-              <input id="f-domain" type="text" required placeholder="e.g. example-medtech.ch / cardiac catheter / GLP-1 CER" />
+              <input id="f-domain" type="text" required placeholder="e.g. example-medtech.ch / cardiac catheter / GLP-1 CER" data-ph-en="e.g. example-medtech.ch / cardiac catheter / GLP-1 CER" data-ph-fr="ex. exemple-medtech.fr / sonde cardiaque / revue GLP-1" />
             </div>
             <div class="form-row">
               <label for="f-track"><span class="lang-en">Target Module</span><span class="lang-fr">Module Souhaité</span></label>
               <select id="f-track">
-                <option value="Track 01 - Sentinel 25-Control External Audit">Track 01 &mdash; External Privacy, DMARC &amp; Edge Audit</option>
-                <option value="Track 02 - OpenFDA MAUDE &amp; PSUR Surveillance">Track 02 &mdash; OpenFDA MAUDE &amp; ClinicalTrials PSUR</option>
-                <option value="Track 03 - PRISMA 2020 Clinical Evidence &amp; Table 1">Track 03 &mdash; PRISMA 2020 &amp; ICH E9 Table 1</option>
-                <option value="Track 04 - Unified Dossier / eCTD RA Command">Track 04 &mdash; Unified Dossier / eCTD Cross-Check</option>
+                <option value="Track 01 - Sentinel 25-Control External Audit" data-en="Track 01 &mdash; External Privacy, DMARC &amp; Edge Audit" data-fr="Module 01 &mdash; Audit Externe nLPD/RGPD, DMARC &amp; S&eacute;curit&eacute;">Track 01 &mdash; External Privacy, DMARC &amp; Edge Audit</option>
+                <option value="Track 02 - OpenFDA MAUDE &amp; PSUR Surveillance" data-en="Track 02 &mdash; OpenFDA MAUDE &amp; ClinicalTrials PSUR" data-fr="Module 02 &mdash; Veille Post-March&eacute; OpenFDA &amp; PSUR MDR">Track 02 &mdash; OpenFDA MAUDE &amp; ClinicalTrials PSUR</option>
+                <option value="Track 03 - PRISMA 2020 Clinical Evidence &amp; Table 1" data-en="Track 03 &mdash; PRISMA 2020 &amp; ICH E9 Table 1" data-fr="Module 03 &mdash; Revue Clinique PRISMA 2020 &amp; Table 1">Track 03 &mdash; PRISMA 2020 &amp; ICH E9 Table 1</option>
+                <option value="Track 04 - Unified Dossier / eCTD RA Command" data-en="Track 04 &mdash; Unified Dossier / eCTD Cross-Check" data-fr="Module 04 &mdash; Dossier Unifi&eacute; &amp; Linter eCTD M1–M5">Track 04 &mdash; Unified Dossier / eCTD Cross-Check</option>
               </select>
             </div>
             <div class="form-row">
               <label for="f-notes"><span class="lang-en">Optional Context (FDA Product Code, PICO keywords, or jurisdiction)</span><span class="lang-fr">Précisions (Code produit FDA, mots-clés PICO, juridiction)</span></label>
-              <textarea id="f-notes" rows="2" placeholder="Swiss nFADP, EU MDR Annex XIV CER, 5-year Europe PMC window..."></textarea>
+              <textarea id="f-notes" rows="2" placeholder="Swiss nFADP, EU MDR Annex XIV CER, 5-year Europe PMC window..." data-ph-en="Swiss nFADP, EU MDR Annex XIV CER, 5-year Europe PMC window..." data-ph-fr="nLPD Suisse / RGPD, revue CER MDR Annexe XIV, fen&ecirc;tre 5 ans Europe PMC..."></textarea>
             </div>
             <button type="submit" class="btn-primary" style="width:100%;">
               <span class="lang-en">Open Pre-Filled Scope Request Email</span>

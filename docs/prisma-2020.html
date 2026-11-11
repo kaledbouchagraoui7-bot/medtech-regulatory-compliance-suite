@@ -6,6 +6,13 @@
   <title>PRISMA 2020 Clinical Evidence, RoB Summary &amp; .ris / .bib Packs &mdash; Sentinel Regulatory &amp; Technical Operations</title>
   <meta name="description" content="Traceable PubMed + Europe PMC PRISMA 2020 literature synthesis with conserved integer flow equations, ICH E9 Table 1 baseline stats, RoB 2 / NOS mapping, and Zotero/EndNote .ris/.bib export." />
   <link rel="canonical" href="https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/prisma-2020.html" />
+  <link rel="icon" type="image/png" href="assets/sentinel_avatar_github.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="PRISMA 2020 Clinical Evidence, RoB Summary &amp; .ris / .bib Packs — Sentinel Regulatory &amp; Technical Operations" />
+  <meta property="og:description" content="Traceable PubMed + Europe PMC PRISMA 2020 literature synthesis with conserved integer flow equations, ICH E9 Table 1 baseline stats, RoB 2 / NOS mapping, and Zotero/EndNote .ris/.bib export." />
+  <meta property="og:url" content="https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/prisma-2020.html" />
+  <meta property="og:image" content="https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/assets/sentinel_logo_full.png" />
+  <meta name="twitter:card" content="summary_large_image" />
   <style>
     :root { --navy:#0F172A; --teal:#0F766E; --slate:#F8FAFC; --border:#E2E8F0; --muted:#475569; }
     * { box-sizing:border-box; }
@@ -43,7 +50,7 @@
         <a href="prisma-2020.html">PRISMA 2020</a>
         <a href="terms.html">Terms</a>
         <a href="cgv.html">CGV</a>
-        <button type="button" class="lang-btn" onclick="var f=!document.body.classList.contains('is-fr');document.body.classList.toggle('is-fr',f);this.textContent=f?'EN':'FR';">FR</button>
+        <button type="button" class="lang-btn" id="seo-lang-btn" onclick="var f=!document.body.classList.contains('is-fr');document.body.classList.toggle('is-fr',f);document.documentElement.lang=f?'fr':'en';this.textContent=f?'EN':'FR';try{localStorage.setItem('sentinel_lang',f?'fr':'en');}catch(e){}">FR</button>
       </div>
     </nav>
   </header>
@@ -53,8 +60,8 @@
       <h1><span class="lang-en">PRISMA 2020 Clinical Evidence, RoB Summary &amp; .ris / .bib Packs</span><span class="lang-fr">Revues PRISMA 2020, Grille RoB &amp; Exports .ris / .bib pour CER EU MDR</span></h1>
       <p class="lead lang-en">Built for CROs, Medical Writers, and Clinical Affairs leaders in Switzerland and France compiling Clinical Evaluation Reports (CER), IVDR performance files, and CTD Module 2.5 digests.</p>
       <p class="lead lang-fr">Conçu pour les CRO, rédacteurs médicaux et directions cliniques en France et Suisse préparant des rapports CER (Annexe XIV), dossiers IVDR ou synthèses CTD 2.5.</p>
-      <ul class="lang-en"><li><strong>Conserved PRISMA 2020 Arithmetic Flow:</strong> Strict N_identified - N_dup - N_excluded = N_included verification baked into Excel COUNTIFS and 300-DPI PNG/PDF diagrams.</li><li><strong>Ready-to-Import .ris &amp; .bib Reference Files:</strong> Every pack ships UTF-8 .ris (EndNote / Zotero) and .bib (LaTeX / JabRef) libraries built from included PubMed/Europe PMC studies.</li><li><strong>Study-Design Risk-of-Bias Framework Summary:</strong> Automatically maps randomized (RoB 2), observational (NOS), and appraisal (JBI) counts without inventing unverified scores.</li><li><strong>ICH E6/E9 Cohort Table 1 &amp; #FFF2CC QA Flags:</strong> Includes Shapiro-Wilk parametric/non-parametric summary workbook alongside full Word Vancouver dossier.</li></ul>
-      <ul class="lang-fr"><li><strong>Équation PRISMA 2020 Vérifiée par Formules :</strong> Conservation arithmétique stricte intégrée aux formules COUNTIFS Excel et au diagramme 300 DPI PNG/PDF.</li><li><strong>Exports .ris (Zotero / EndNote) &amp; .bib (BibTeX) :</strong> Chaque livraison inclut les fichiers bibliographiques UTF-8 prêts à importer depuis les études retenues.</li><li><strong>Cartographie Biais par Schéma (RoB 2 / NOS) :</strong> Agrège automatiquement les cadres d&#x27;évaluation adaptés aux essais randomisés et études observationnelles.</li><li><strong>Table 1 Biostatistiques ICH E9 &amp; Contrôle #FFF2CC :</strong> Inclut les tests de normalité Shapiro-Wilk et le dossier Word Vancouver avec DOI cliquables.</li></ul>
+      <ul class="lang-en"><li><strong>Conserved PRISMA 2020 Arithmetic Flow:</strong> Strict N_identified - N_dup - N_excluded = N_included verification baked into Excel COUNTIFS and 300-DPI PNG/PDF diagrams.</li><li><strong>Ready-to-Import .ris &amp; .bib Reference Files:</strong> Every pack ships UTF-8 .ris (EndNote / Zotero) and .bib (LaTeX / JabRef) libraries built from included PubMed/Europe PMC studies.</li><li><strong>Study-Design Risk-of-Bias Framework Summary:</strong> Automatically maps randomized (RoB 2), observational (NOS), and appraisal (JBI) counts without inventing unverified scores.</li><li><strong>ICH E6/E9 Cohort Table 1 &amp; Amber QA Flags:</strong> Includes Shapiro-Wilk parametric/non-parametric summary workbook alongside full Word Vancouver dossier.</li></ul>
+      <ul class="lang-fr"><li><strong>Équation PRISMA 2020 Vérifiée par Formules :</strong> Conservation arithmétique stricte intégrée aux formules COUNTIFS Excel et au diagramme 300 DPI PNG/PDF.</li><li><strong>Exports .ris (Zotero / EndNote) &amp; .bib (BibTeX) :</strong> Chaque livraison inclut les fichiers bibliographiques UTF-8 prêts à importer depuis les études retenues.</li><li><strong>Cartographie Biais par Schéma (RoB 2 / NOS) :</strong> Agrège automatiquement les cadres d&#x27;évaluation adaptés aux essais randomisés et études observationnelles.</li><li><strong>Table 1 Biostatistiques ICH E9 &amp; Surlignage Ambre QA :</strong> Inclut les tests de normalité Shapiro-Wilk et le dossier Word Vancouver avec DOI cliquables.</li></ul>
       <div class="actions">
         <a class="btn-primary" href="index.html#intake"><span class="lang-en">Request Free 1-Page Scope Preview</span><span class="lang-fr">Demander un Aper&ccedil;u Gratuit (1 Page)</span></a>
         <a class="btn-outline" href="samples/prisma_glp1_clinical_sample.zip" download><span class="lang-en">&#8595; Download PRISMA &amp; .ris/.bib Sample ZIP</span><span class="lang-fr">&#8595; Télécharger Exemple PRISMA + .ris/.bib ZIP</span></a>
@@ -62,7 +69,10 @@
     </article>
   </main>
   <footer>
-    <span>Contact: <a href="mailto:kaledbouchagraoui7@gmail.com">kaledbouchagraoui7@gmail.com</a> &middot; <a href="privacy.html">Privacy (GDPR / nFADP)</a> &middot; <a href="sitemap.xml">Sitemap</a></span>
+    <span><a href="index.html">Home</a> &middot; <a href="terms.html">Terms (EN)</a> &middot; <a href="cgv.html">CGV (FR)</a> &middot; <a href="privacy.html">Privacy (GDPR / nFADP)</a> &middot; <a href="sitemap.xml">Sitemap</a> &middot; Contact: <a href="mailto:kaledbouchagraoui7@gmail.com">kaledbouchagraoui7@gmail.com</a></span>
   </footer>
+  <script>
+    (function(){try{var q=new URLSearchParams(window.location.search||'').get('lang');var s=(q==='fr'||q==='en')?q:(localStorage.getItem('sentinel_lang')||'en');if(s==='fr'){document.body.classList.add('is-fr');document.documentElement.lang='fr';var b=document.getElementById('seo-lang-btn');if(b)b.textContent='EN';}}catch(e){}})();
+  </script>
 </body>
 </html>

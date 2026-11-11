@@ -6,6 +6,13 @@
   <title>Swiss nFADP, EU GDPR &amp; DMARC/SPF 25-Control External Audit &mdash; Sentinel Regulatory &amp; Technical Operations</title>
   <meta name="description" content="Passive DNS/DMARC (&gt;10 SPF lookup cap), MTA-STS, Google Fonts IP leak (nFADP/GDPR Art. 44), CMP Reject symmetry, and edge TLS/CSP posture audit in 48h for CH and FR MedTech firms." />
   <link rel="canonical" href="https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/nfadp-audit.html" />
+  <link rel="icon" type="image/png" href="assets/sentinel_avatar_github.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Swiss nFADP, EU GDPR &amp; DMARC/SPF 25-Control External Audit — Sentinel Regulatory &amp; Technical Operations" />
+  <meta property="og:description" content="Passive DNS/DMARC (&gt;10 SPF lookup cap), MTA-STS, Google Fonts IP leak (nFADP/GDPR Art. 44), CMP Reject symmetry, and edge TLS/CSP posture audit in 48h for CH and FR MedTech firms." />
+  <meta property="og:url" content="https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/nfadp-audit.html" />
+  <meta property="og:image" content="https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/assets/sentinel_logo_full.png" />
+  <meta name="twitter:card" content="summary_large_image" />
   <style>
     :root { --navy:#0F172A; --teal:#0F766E; --slate:#F8FAFC; --border:#E2E8F0; --muted:#475569; }
     * { box-sizing:border-box; }
@@ -43,7 +50,7 @@
         <a href="prisma-2020.html">PRISMA 2020</a>
         <a href="terms.html">Terms</a>
         <a href="cgv.html">CGV</a>
-        <button type="button" class="lang-btn" onclick="var f=!document.body.classList.contains('is-fr');document.body.classList.toggle('is-fr',f);this.textContent=f?'EN':'FR';">FR</button>
+        <button type="button" class="lang-btn" id="seo-lang-btn" onclick="var f=!document.body.classList.contains('is-fr');document.body.classList.toggle('is-fr',f);document.documentElement.lang=f?'fr':'en';this.textContent=f?'EN':'FR';try{localStorage.setItem('sentinel_lang',f?'fr':'en');}catch(e){}">FR</button>
       </div>
     </nav>
   </header>
@@ -62,7 +69,10 @@
     </article>
   </main>
   <footer>
-    <span>Contact: <a href="mailto:kaledbouchagraoui7@gmail.com">kaledbouchagraoui7@gmail.com</a> &middot; <a href="privacy.html">Privacy (GDPR / nFADP)</a> &middot; <a href="sitemap.xml">Sitemap</a></span>
+    <span><a href="index.html">Home</a> &middot; <a href="terms.html">Terms (EN)</a> &middot; <a href="cgv.html">CGV (FR)</a> &middot; <a href="privacy.html">Privacy (GDPR / nFADP)</a> &middot; <a href="sitemap.xml">Sitemap</a> &middot; Contact: <a href="mailto:kaledbouchagraoui7@gmail.com">kaledbouchagraoui7@gmail.com</a></span>
   </footer>
+  <script>
+    (function(){try{var q=new URLSearchParams(window.location.search||'').get('lang');var s=(q==='fr'||q==='en')?q:(localStorage.getItem('sentinel_lang')||'en');if(s==='fr'){document.body.classList.add('is-fr');document.documentElement.lang='fr';var b=document.getElementById('seo-lang-btn');if(b)b.textContent='EN';}}catch(e){}})();
+  </script>
 </body>
 </html>

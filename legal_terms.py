@@ -150,7 +150,7 @@ def get_legal_clauses(track: str = "general", cfg: dict[str, Any] | None = None)
             "3. Zero Fabrication Integrity & Public Source Accuracy",
             "Software outputs reflect third-party public endpoints (DNS, HTTP headers, OpenFDA CC0, NLM ClinicalTrials.gov v2, "
             "Europe PMC / NCBI PubMed) or Client-supplied files at the exact capture timestamp. Missing DOIs or conclusions are never "
-            "invented and are highlighted yellow (#FFF2CC) for manual QA verification. Third-party registries can update after capture.",
+            "invented and are highlighted in soft amber for manual QA verification. Third-party registries can update after capture.",
         ),
         (
             "4. Client Authorization & Deployment Responsibility",
@@ -341,6 +341,7 @@ def _render_editorial_legal_html(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{html.escape(page_title)} — {html.escape(prov['brand_name'])}</title>
   <meta name="description" content="{html.escape(page_title)} for {html.escape(prov['brand_name'])} technical compliance and regulatory data deliverables." />
+  <link rel="icon" type="image/png" href="assets/sentinel_avatar_github.png" />
   <style>
     :root {{
       --navy: #0F172A;
@@ -480,7 +481,7 @@ def get_cgv_fr_clauses(cfg: dict[str, Any] | None = None) -> list[tuple[str, str
         ),
         (
             "4. Intégrité ALCOA+ & Zéro Fabrication",
-            "Les données proviennent directement d'APIs publiques (OpenFDA CC0, ClinicalTrials.gov v2, Europe PMC / NCBI PubMed) ou de fichiers fournis par le Client à l'instant T. Les champs absents ne sont jamais inventés et sont signalés en surbrillance jaune (#FFF2CC) pour vérification manuelle.",
+            "Les données proviennent directement d'APIs publiques (OpenFDA CC0, ClinicalTrials.gov v2, Europe PMC / NCBI PubMed) ou de fichiers fournis par le Client à l'instant T. Les champs absents ne sont jamais inventés et sont mis en surbrillance ambre pour vérification manuelle.",
         ),
         (
             "5. Limitation de Responsabilité",

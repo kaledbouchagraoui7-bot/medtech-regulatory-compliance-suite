@@ -6,6 +6,13 @@
   <title>EU MDR PSUR &amp; OpenFDA MAUDE Z-Score Surveillance Packs &mdash; Sentinel Regulatory &amp; Technical Operations</title>
   <meta name="description" content="Automated EU MDR Art. 83-86 &amp; MDCG 2022-21 PSUR surveillance combining OpenFDA MAUDE monthly Z-score spike alerts, 510(k)/recall logs, and ClinicalTrials.gov v2 PMCF links." />
   <link rel="canonical" href="https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/eu-mdr-psur.html" />
+  <link rel="icon" type="image/png" href="assets/sentinel_avatar_github.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="EU MDR PSUR &amp; OpenFDA MAUDE Z-Score Surveillance Packs — Sentinel Regulatory &amp; Technical Operations" />
+  <meta property="og:description" content="Automated EU MDR Art. 83-86 &amp; MDCG 2022-21 PSUR surveillance combining OpenFDA MAUDE monthly Z-score spike alerts, 510(k)/recall logs, and ClinicalTrials.gov v2 PMCF links." />
+  <meta property="og:url" content="https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/eu-mdr-psur.html" />
+  <meta property="og:image" content="https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/assets/sentinel_logo_full.png" />
+  <meta name="twitter:card" content="summary_large_image" />
   <style>
     :root { --navy:#0F172A; --teal:#0F766E; --slate:#F8FAFC; --border:#E2E8F0; --muted:#475569; }
     * { box-sizing:border-box; }
@@ -43,7 +50,7 @@
         <a href="prisma-2020.html">PRISMA 2020</a>
         <a href="terms.html">Terms</a>
         <a href="cgv.html">CGV</a>
-        <button type="button" class="lang-btn" onclick="var f=!document.body.classList.contains('is-fr');document.body.classList.toggle('is-fr',f);this.textContent=f?'EN':'FR';">FR</button>
+        <button type="button" class="lang-btn" id="seo-lang-btn" onclick="var f=!document.body.classList.contains('is-fr');document.body.classList.toggle('is-fr',f);document.documentElement.lang=f?'fr':'en';this.textContent=f?'EN':'FR';try{localStorage.setItem('sentinel_lang',f?'fr':'en');}catch(e){}">FR</button>
       </div>
     </nav>
   </header>
@@ -53,8 +60,8 @@
       <h1><span class="lang-en">EU MDR PSUR &amp; OpenFDA MAUDE Z-Score Surveillance Packs</span><span class="lang-fr">Dossiers PSUR EU MDR Art. 83–86 &amp; Signaux Statistiques MAUDE OpenFDA</span></h1>
       <p class="lead lang-en">Accelerate recurring PSUR, PMS Plan, and PRRC safety reviews for Class IIa/IIb/III medical devices across Swiss (MedDO) and French/EU manufacturers.</p>
       <p class="lead lang-fr">Accélérez vos cycles PSUR, PMS et revues PRRC pour dispositifs médicaux Classe IIa/IIb/III en France et en Suisse (ODim / MedDO).</p>
-      <ul class="lang-en"><li><strong>Monthly Z-Score Signal Spike Alerts (Z &gt;= 2.0):</strong> Computes chronological monthly MAUDE baseline mean and standard deviation to surface statistically abnormal event spikes.</li><li><strong>Predicate 510(k) &amp; FDA Recall Stratification:</strong> Consolidates K-numbers, decision dates, and Class I/II/III enforcement records into filterable Excel tables.</li><li><strong>ClinicalTrials.gov v2 Clickable PMCF Registry:</strong> Pairs live interventional and observational study NCT links with sponsor, phase, status, and enrollment counts.</li><li><strong>ALCOA+ Provenance &amp; Zero Guesses:</strong> Blank narratives or unmapped FDA device codes are clearly shaded #FFF2CC with timestamped API query metadata.</li></ul>
-      <ul class="lang-fr"><li><strong>Alertes Statistiques Mensuelles Z-Score (Z &gt;= 2.0) :</strong> Agrège les séries mensuelles OpenFDA MAUDE pour détecter automatiquement les pics anormaux de signalement.</li><li><strong>Historique 510(k) &amp; Rappels Produits FDA :</strong> Consolide les numéros K, dates de décision et classes de rappel dans un classeur Excel filtrable.</li><li><strong>Registre PMCF ClinicalTrials.gov v2 Cliquable :</strong> Relie directement chaque étude clinique active/terminée par lien NCT officiel avec promoteur et effectifs.</li><li><strong>Traçabilité ALCOA+ &amp; Zéro Donnée Inventée :</strong> Tout champ source manquant reste surligné #FFF2CC avec horodatage exact des requêtes API.</li></ul>
+      <ul class="lang-en"><li><strong>Monthly Z-Score Signal Spike Alerts (Z &gt;= 2.0):</strong> Computes chronological monthly MAUDE baseline mean and standard deviation to surface statistically abnormal event spikes.</li><li><strong>Predicate 510(k) &amp; FDA Recall Stratification:</strong> Consolidates K-numbers, decision dates, and Class I/II/III enforcement records into filterable Excel tables.</li><li><strong>ClinicalTrials.gov v2 Clickable PMCF Registry:</strong> Pairs live interventional and observational study NCT links with sponsor, phase, status, and enrollment counts.</li><li><strong>ALCOA+ Provenance &amp; Zero Guesses:</strong> Blank narratives or unmapped FDA device codes are clearly shaded in soft amber with timestamped API query metadata.</li></ul>
+      <ul class="lang-fr"><li><strong>Alertes Statistiques Mensuelles Z-Score (Z &gt;= 2.0) :</strong> Agrège les séries mensuelles OpenFDA MAUDE pour détecter automatiquement les pics anormaux de signalement.</li><li><strong>Historique 510(k) &amp; Rappels Produits FDA :</strong> Consolide les numéros K, dates de décision et classes de rappel dans un classeur Excel filtrable.</li><li><strong>Registre PMCF ClinicalTrials.gov v2 Cliquable :</strong> Relie directement chaque étude clinique active/terminée par lien NCT officiel avec promoteur et effectifs.</li><li><strong>Traçabilité ALCOA+ &amp; Zéro Donnée Inventée :</strong> Tout champ source manquant reste surligné ambre pour revue QA avec horodatage exact des requêtes API.</li></ul>
       <div class="actions">
         <a class="btn-primary" href="index.html#intake"><span class="lang-en">Request Free 1-Page Scope Preview</span><span class="lang-fr">Demander un Aper&ccedil;u Gratuit (1 Page)</span></a>
         <a class="btn-outline" href="samples/pms_cgm_class_iib_sample.zip" download><span class="lang-en">&#8595; Download CGM PSUR Sample ZIP</span><span class="lang-fr">&#8595; Télécharger l&#x27;Exemple PSUR ZIP</span></a>
@@ -62,7 +69,10 @@
     </article>
   </main>
   <footer>
-    <span>Contact: <a href="mailto:kaledbouchagraoui7@gmail.com">kaledbouchagraoui7@gmail.com</a> &middot; <a href="privacy.html">Privacy (GDPR / nFADP)</a> &middot; <a href="sitemap.xml">Sitemap</a></span>
+    <span><a href="index.html">Home</a> &middot; <a href="terms.html">Terms (EN)</a> &middot; <a href="cgv.html">CGV (FR)</a> &middot; <a href="privacy.html">Privacy (GDPR / nFADP)</a> &middot; <a href="sitemap.xml">Sitemap</a> &middot; Contact: <a href="mailto:kaledbouchagraoui7@gmail.com">kaledbouchagraoui7@gmail.com</a></span>
   </footer>
+  <script>
+    (function(){try{var q=new URLSearchParams(window.location.search||'').get('lang');var s=(q==='fr'||q==='en')?q:(localStorage.getItem('sentinel_lang')||'en');if(s==='fr'){document.body.classList.add('is-fr');document.documentElement.lang='fr';var b=document.getElementById('seo-lang-btn');if(b)b.textContent='EN';}}catch(e){}})();
+  </script>
 </body>
 </html>

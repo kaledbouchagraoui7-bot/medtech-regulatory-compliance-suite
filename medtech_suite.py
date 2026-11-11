@@ -261,10 +261,10 @@ def main(argv: list[str] | None = None) -> int:
     p_uni.add_argument("--config", default="config.json", help="Path to clinical search config.json")
     p_uni.add_argument("--output-dir", default="output", help="Output directory")
 
-    # Subcommand 4: ra-command-center (Solves the 5 RA Pain Points + Spider-Web Verticals)
+    # Subcommand 4: ra-command-center (Upstream SLA + eCTD Cross-Check + Guidance Drift + Spider-Web)
     p_ra = sub.add_parser(
         "ra-command-center",
-        help="Run the RA 5-Painkiller Command Center (Upstream SLA Blame-Shield, eCTD Cross-Check, Guidance Drift, Statutory Hold & Spider-Web Matrix)",
+        help="Run the RA Operations Command Center (Upstream SLA Blame-Shield, eCTD Cross-Check, Guidance Drift, Statutory Hold & Spider-Web Matrix)",
     )
     p_ra.add_argument(
         "--input",

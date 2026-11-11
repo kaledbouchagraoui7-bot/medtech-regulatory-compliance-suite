@@ -299,7 +299,7 @@ def _track_deliverables_and_inputs(track: str, domain: str) -> tuple[str, str]:
     if track == "clinical_lit_prisma":
         return (
             "1) Vancouver-Cited Landscape Word Evidence Table (.docx); "
-            "2) 4-Sheet Filterable Excel Screening Matrix (.xlsx) with clickable DOIs, COUNTIFS formulas, and #FFF2CC QA verification flags; "
+            "2) 4-Sheet Filterable Excel Screening Matrix (.xlsx) with clickable DOIs, COUNTIFS formulas, and soft amber QA verification highlights; "
             "3) 300-DPI Print-Ready PRISMA 2020 Flow Diagram (.png & .pdf) with verified conservation math; "
             "4) Optional ICH E6/E9 Cohort Table 1 & RefSeq QC annex + ALCOA+ SHA-256 Provenance Manifest.",
             "Please confirm: (a) search keywords / PICO criteria or your CSV screening export + recency window, "
@@ -308,7 +308,7 @@ def _track_deliverables_and_inputs(track: str, domain: str) -> tuple[str, str]:
     if track == "ra_command_center":
         return (
             "1) Statutory Gatekeeper & Delay Attribution Brief (.docx); "
-            "2) 6-Sheet eCTD M1-M5 Cross-Check, SLA Blame-Shield & Guidance Drift Workbook (.xlsx); "
+            "2) 6-Sheet eCTD M1-M5 Cross-Check, Upstream SLA Attribution & Guidance Drift Workbook (.xlsx); "
             "3) 300-DPI 4-Panel Operations Dashboard (.png & .pdf); "
             "4) ALCOA+ SHA-256 Telemetry & Provenance Bundle.",
             "Please confirm: (a) target regulatory pathway (eCTD / EU MDR / IVDR) and department SLA dates, "
@@ -684,7 +684,7 @@ def _build_manifest_and_refresh_zip(
         "",
         "## Human-in-the-Loop Sign-Off (EU MDR / nFADP / ALCOA+)",
         "- [ ] Verified target domain / product scope matches signed confirmation.",
-        "- [ ] Confirmed any missing DOI/conclusion cells (`#FFF2CC`) were flagged cleanly without fabrication.",
+        "- [ ] Confirmed any missing DOI/conclusion cells (amber highlight) were flagged cleanly without fabrication.",
         "- [ ] Attached or linked matching Tiime invoice + `TERMS_OF_SERVICE_AND_DISCLAIMER.txt`.",
     ])
     checklist_md = deliverables_dir / "QA_SIGNOFF_CHECKLIST.md"

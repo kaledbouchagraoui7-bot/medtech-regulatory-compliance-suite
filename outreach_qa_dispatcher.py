@@ -680,15 +680,15 @@ def default_price_for_country(country: str, sector: str = "") -> str:
         "healthtech",
     )
     if c == "UK":
-        return "£380" if is_premium else "£300"
+        return "£390" if is_premium else "£340"
     if c == "US":
         return "$450" if is_premium else "$380"
     if c == "CA":
-        return "CAD 540" if is_premium else "CAD 460"
+        return "CAD 520" if is_premium else "CAD 440"
     if c == "AU":
         return "AUD 580" if is_premium else "AUD 490"
     if c == "CH":
-        return "450 CHF" if is_premium else "350 CHF"
+        return "CHF 450" if is_premium else "CHF 350"
     if c == "SG":
         return "SGD 520" if is_premium else "SGD 440"
     return "EUR 420" if is_premium else "EUR 350"

@@ -32,7 +32,7 @@
         "extractables_leachables_signed_coa",
         "batch_lot_B2026_09_impurity_profile"
       ],
-      "statutory_citation": "21 CFR 314.50(d)(1) / ICH Q1A(R2) / EU MDR Annex II §3.2",
+      "statutory_citation": "ICH M4 / EU MDR",
       "rtf_blocker": true
     },
     {
@@ -243,7 +243,7 @@
       "department": "CMC & Manufacturing",
       "to_email": "cmc-lead@biomed-internal.example",
       "subject": "[STATUTORY GATEWAY HOLD] PKG-CMC-301 (eCTD Module 3.2.P / MDR Annex II Sec 3) — 3 Mandatory Items Blocking Filing",
-      "body": "Hi CMC & Manufacturing Lead,\n\nOur automated eCTD/MDR Pre-Flight Gatekeeper ran today (2026-11-10) for SUB-2026-CARDIO-AI-04. While Regulatory Affairs has completed 100% of its gateway shell (0 days overdue), the automated validator placed a statutory hold on eCTD Module 3.2.P / MDR Annex II Sec 3 (PKG-CMC-301: Sterilization Validation & 24-Month Accelerated Stability Batch Analysis) under 21 CFR 314.50(d)(1) / ICH Q1A(R2) / EU MDR Annex II §3.2.\n\n• Current Status: OVERDUE_INCOMPLETE (12 days past SLA due date 2026-10-29; represents 52.2% of total critical-path delay = $540,000 commercial timeline impact).\n• Missing Statutory Artifacts Required to Unlock Gateway: 24m_real_time_stability_table, extractables_leachables_signed_coa, batch_lot_B2026_09_impurity_profile.\n\nSubmitting without these items triggers a 98% probability of an immediate Agency Refuse-to-File (RTF) / Major Deficiency (exposing the company to $4,212,000 in 90-day CRL reset costs). Please upload the missing items to the shared vault so the validator can lift the hold."
+      "body": "Hi CMC & Manufacturing Lead,\n\nOur automated eCTD/MDR Pre-Flight Gatekeeper ran today (2026-11-10) for SUB-2026-CARDIO-AI-04. While Regulatory Affairs has completed 100% of its gateway shell (0 days overdue), the automated validator placed a statutory hold on eCTD Module 3.2.P / MDR Annex II Sec 3 (PKG-CMC-301: Sterilization Validation & 24-Month Accelerated Stability Batch Analysis) under ICH M4 / EU MDR.\n\n• Current Status: OVERDUE_INCOMPLETE (12 days past SLA due date 2026-10-29; represents 52.2% of total critical-path delay = $540,000 commercial timeline impact).\n• Missing Statutory Artifacts Required to Unlock Gateway: 24m_real_time_stability_table, extractables_leachables_signed_coa, batch_lot_B2026_09_impurity_profile.\n\nSubmitting without these items triggers a 98% probability of an immediate Agency Refuse-to-File (RTF) / Major Deficiency (exposing the company to $4,212,000 in 90-day CRL reset costs). Please upload the missing items to the shared vault so the validator can lift the hold."
     },
     {
       "package_id": "PKG-RND-204",
