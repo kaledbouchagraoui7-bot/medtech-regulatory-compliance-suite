@@ -558,6 +558,16 @@ def generate_ra_excel_workbook(report: dict[str, Any], out_xlsx: Path) -> None:
     ]
     for k, v in readme_rows:
         ws6.append([k, v])
+    from legal_terms import append_terms_to_readme_xlsx
+
+    append_terms_to_readme_xlsx(
+        ws6,
+        thin_border,
+        Font(name="Calibri", size=9.5, bold=True),
+        Font(name="Calibri", size=9.5),
+        Alignment(horizontal="left", vertical="top", wrap_text=True),
+        track="ra_command_center",
+    )
     style_sheet(ws6, [34, 90])
 
     wb.save(str(out_xlsx))
@@ -679,6 +689,10 @@ def generate_ra_word_brief(report: dict[str, Any], out_docx: Path) -> None:
         )
         r_g.font.size = Pt(9)
 
+    from legal_terms import append_terms_section_docx
+
+    append_terms_section_docx(doc, track="ra_command_center")
+
     doc.save(str(out_docx))
 
 
@@ -709,11 +723,15 @@ def build_ra_command_center_package(
     png_path = pkg_dir / f"{slug}_ra_control_dashboard.png"
     pdf_path = pkg_dir / f"{slug}_ra_control_dashboard.pdf"
     json_path = pkg_dir / f"{slug}_ra_telemetry.json"
+    terms_path = pkg_dir / "TERMS_OF_SERVICE_AND_DISCLAIMER.txt"
+
+    from legal_terms import render_terms_txt
 
     generate_ra_word_brief(report, docx_path)
     generate_ra_excel_workbook(report, xlsx_path)
     generate_ra_dashboard_chart(report, png_path, pdf_path)
     json_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    terms_path.write_text(render_terms_txt(track="ra_command_center"), encoding="utf-8")
 
     zip_path = out_root / f"{slug}_ra_command_package.zip"
     with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
@@ -728,6 +746,7 @@ def build_ra_command_center_package(
         "xlsx": xlsx_path,
         "png": png_path,
         "pdf": pdf_path,
+        "terms": terms_path,
         "zip": zip_path,
     }
 

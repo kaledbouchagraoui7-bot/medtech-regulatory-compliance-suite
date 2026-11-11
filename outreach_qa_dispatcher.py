@@ -96,6 +96,13 @@ BANNED_UNPROFESSIONAL_TERMS = [
     "act now",
     "!!!",
     "free money",
+    "github.com",
+    "source code",
+    "remediation snippets",
+    "config snippets",
+    "screening scripts",
+    "python scripts",
+    "code repository",
 ]
 
 PRICE_REGEX = re.compile(
@@ -109,6 +116,11 @@ HIGH_IMPACT_HUMANIZER_REPLACEMENTS: list[tuple[str, str]] = [
     (r"(?i)J'espère que ce message vous trouve en bonne santé[\.,]?\s*", ""),
     (r"(?i)Ich hoffe, diese E-Mail erreicht Sie wohlbehalten[\.,]?\s*", ""),
     (r"(?i)\bin today'?s (?:rapidly evolving|fast-paced|digital|modern) (?:landscape|world|era),?\s*", ""),
+    (r"(?i),?\s*with source code on GitHub at [a-zA-Z0-9._/-]+", ""),
+    (r"(?i)\s*(?:source code|repo(?:sitory)?|scripts?) (?:at|on) https?://github\.com/\S+", ""),
+    (r"(?i)\bconfig snippets\b", "IT fix files"),
+    (r"(?i)\bremediation snippets\b", "turnkey IT fix files"),
+    (r"(?i)\b(?:screening|python) scripts\b", "automated review workflows"),
     (r"(?i)\bdelighted to\b", "happy to"),
     (r"(?i)\bthrilled to\b", "glad to"),
     (r"(?i)\bleverage\b", "use"),
@@ -129,6 +141,147 @@ HIGH_IMPACT_HUMANIZER_REPLACEMENTS: list[tuple[str, str]] = [
     (r"(?i)\bin order to\b", "to"),
     (r"(?i)\bdue to the fact that\b", "because"),
 ]
+
+# ---------------------------------------------------------------------------
+# 1B. Shared Target ICP Compliance Filter (Core + Expanded High-Stakes B2B)
+# ---------------------------------------------------------------------------
+
+TARGET_ICP_SECTORS = {
+    "MedTech OEM",
+    "MedTech RA",
+    "Boutique RA",
+    "Diagnostics",
+    "Clinical Genomics",
+    "Biotech / CRO",
+    "Dermo-Cosmetics",
+    "Nutraceuticals",
+    "Veterinary Pharma",
+    "CDMO / Pharma",
+    "HealthTech",
+    "Wealth & Family Office",
+    "Legal/IP",
+    "Accounting/Tax",
+    "B2B SaaS",
+    "InsurTech",
+    # Legacy normalized manifest slugs
+    "medtech_cer",
+    "cro_reg",
+    "diagnostics_lab",
+    "cpa_fiduciary",
+    "law_ip",
+    "wealth_office",
+    "healthtech",
+    "b2b_saas",
+}
+
+_NON_ICP_TLD_RE = re.compile(
+    r"(?:^|\.)(?:edu|gov|mil)(?:\.[a-z]{2,})?$|(?:^|\.)(?:gouv|ac)\.[a-z]{2,}$",
+    re.I,
+)
+
+_NON_ICP_EXACT_DOMAINS = (
+    "nhs.uk", "gov.uk", "nih.gov", "who.int", "europa.eu", "has-sante.fr", "sante.fr",
+    "ey.com", "ge.com", "bd.com", "ppd.com", "ppdi.com", "jnj.com", "bms.com",
+    "lilly.com", "edwards.com", "otandp.com", "matilda.org", "shcd.in",
+    "bioclinic.fr", "santelabs.com", "santeclinics.com", "fiducial.fr", "labone.in",
+)
+
+_NON_ICP_DOMAINS = (
+    "univ", "ufr", "unistra", "facult",
+    "plannedparenthood.", "docasap.", "doctolib.", "zocdoc.",
+    "sega.", "nintendo.", "sony.", "kpmg.", "pwc.", "deloitte.",
+    "bdo.", "grantthornton.", "gtjapan.", "mazars.", "fiducial.",
+    "pfizer.", "roche.", "novartis.", "sanofi.", "astrazeneca.", "gsk.", "bayer.", "merck.",
+    "thermo", "illumina.", "siemens", "philips", "gehealthcare", "medtronic", "abbott",
+    "bostonscientific", "stryker", "jjmedtech", "amgen", "gilead", "biogen", "regeneron",
+    "takeda", "boehringer", "olympus", "baxter", "fresenius", "resmed", "alcon", "hologic",
+    "intuitive", "mindray", "canon", "fujifilm", "hitachi", "toshiba", "samsung",
+    "thermofisher", "agilent", "perkinelmer", "beckman", "danaher", "bio-rad", "iqvia",
+    "labcorp", "iconplc", "syneos", "parexel", "charlesriver", "wuxi", "steris.",
+    "smith-nephew.", "coloplast.", "dentsplysirona.", "viatris.", "mylan.",
+    "actelion.", "ipsen.", "servier.", "loreal.", "galderma.", "beiersdorf.",
+    "shiseido.", "esteelauder.", "unilever.", "nestle.", "danone.", "zoetis.", "elanco.",
+    # Local consumer healthcare / physio / dental / walk-in scan / activist domains
+    "dentist", "dentistry", "dentalstudio", "smiledental", "physio",
+    "chiropract", "osteopath", "mclinic", "maternity", "digestivecentre",
+    "drandrew", "romeroinstitute", "otandp.", "londonmedical.", "ahdubai.",
+    "rafflesmedical", "cmcdubai.", "abbeycare", "surgery.co.uk",
+    "apollodiagnostics.", "henoticdiagnostics.", "arockiyaclinic.", "santelabs.", "santeclinics.",
+    "national-accident",
+)
+
+_NON_ICP_NAME_RE = re.compile(
+    r"\b(?:"
+    r"university|universit[éeyä]|faculty|faculté|college|high school|elementary school|"
+    r"hospital|hôpital|hopital|krankenhaus|spital|ospedale|nhs|ministry|municipality|"
+    r"charity|foundation|church|parish|synagogue|mosque|museum|planned parenthood|free clinic|"
+    r"dentist|dentistry|dental practice|dental studio|dental clinic|dental care|dental centre|dental center|"
+    r"dental\s+(?:llc|pc|dds|dmd|pllc|pa|associates|arts|group|house)|family dental|smiles?\s+dental|"
+    r"perio centre|orthodontic practice|physiotherapy|physio|chiropractic|chiropractor|"
+    r"osteopath|osteopathy|podiatry|chiropody|optician|opticians|optometrist|maternity clinic|"
+    r"fertility clinic|walk-in clinic|urgent care|gp surgery|health centre|medical centre|"
+    r"medical center|digestive centre|vascular surgery|family practice|medspa|medical spa|"
+    r"scans\s*[&+]\s*diagnostics|scans\s+and\s+diagnostics|clinic\s*[&+]\s*diagnostic|"
+    r"clinic\s+and\s+diagnostic|speciality clinic|specialty clinic|diagnostic centre|diagnostic center|"
+    r"imaging centre|imaging center|scan centre|scan center|pathology lab|medical clinic|"
+    r"polyclinic|polyclinique|helpline|legal aid|christic|romero|"
+    r"grant thornton|pricewaterhouse|ernst\s*[&+]\s*young|deloitte|kpmg|mazars|fiducial|"
+    r"beauty salon|massage therapy|acupuncture clinic|veterinary clinic|animal hospital|pet clinic|"
+    r"games|gaming|yearbook|tidsskrift"
+    r")\b",
+    re.I,
+)
+
+_NON_ICP_LEGAL_NONPROFIT_RE = re.compile(
+    r"\b(?:institute|helpline|coalition|society|legal aid|christic|romero|union|federation|council)\b",
+    re.I,
+)
+
+_B2B_HEALTH_POSITIVE_RE = re.compile(
+    r"\b(?:healthtech|health tech|digital health|telehealth|eclinical|medtech|medical device|"
+    r"regulatory|genomics|biotech|biopharma|pharma|therapeutics|cro|"
+    r"clinical research|clinical trial|dermo-cosmetic|cosmeceutical|skincare lab|"
+    r"nutraceutical|probiotic|microbiome|veterinary pharma|animal health|cdmo|life\s+sciences?)\b",
+    re.I,
+)
+
+
+def is_target_icp_entity(company: str, domain: str, sector: str = "") -> tuple[bool, str]:
+    """
+    Validate strictly against the high-stakes B2B / Life Science Ideal Customer Profile (ICP).
+    Rejects local consumer practices (dentists, physio, maternity/solo doctor/scan clinics),
+    activist non-profits, schools/universities/governments, Big-4/megacorp chains, and Fortune-500 conglomerates.
+    """
+    dl = (domain or "").strip().lower()
+    comp_clean = (company or "").strip()
+    nl = " " + comp_clean.lower() + " "
+    sec = (sector or "").strip()
+
+    if not dl or "." not in dl or len(dl) < 4 or len(comp_clean) < 3:
+        return False, "INVALID_DOMAIN_OR_NAME"
+    if _NON_ICP_TLD_RE.search(dl):
+        return False, f"BLOCKED_TLD:{dl}"
+    for exact_dom in _NON_ICP_EXACT_DOMAINS:
+        if dl == exact_dom or dl.endswith("." + exact_dom):
+            return False, f"BLOCKED_EXACT_DOMAIN:{exact_dom}"
+    for bad_dom in _NON_ICP_DOMAINS:
+        if bad_dom in dl:
+            return False, f"BLOCKED_DOMAIN:{bad_dom}"
+    m_name = _NON_ICP_NAME_RE.search(nl)
+    if m_name:
+        return False, f"BLOCKED_NAME:{m_name.group(0).strip()}"
+    if re.search(r"\bbdo\b", nl):
+        return False, "BLOCKED_NAME:bdo"
+    if sec == "Legal/IP":
+        m_leg = _NON_ICP_LEGAL_NONPROFIT_RE.search(nl)
+        if m_leg:
+            return False, f"BLOCKED_LEGAL_NONPROFIT:{m_leg.group(0).strip()}"
+    if sec in ("Healthcare", "clinic", ""):
+        if not _B2B_HEALTH_POSITIVE_RE.search(comp_clean):
+            return False, f"NON_ICP_GENERIC_HEALTHCARE:{sec or 'empty'}"
+    elif sec not in TARGET_ICP_SECTORS:
+        return False, f"UNAPPROVED_SECTOR:{sec}"
+    return True, "OK"
 
 
 # ---------------------------------------------------------------------------
@@ -305,9 +458,10 @@ def verify_professionalism(
         issues.append(f"Body exceeds {max_words}-word maximum ({wc} words).")
 
     lower_body = body.lower()
+    lower_all = f"{subject}\n{body}".lower()
     for banned in BANNED_UNPROFESSIONAL_TERMS:
-        if re.search(rf"\b{re.escape(banned)}\b", lower_body) if banned.isalpha() else (banned in lower_body):
-            issues.append(f"Banned phrase or 'free' offer detected: '{banned}'")
+        if re.search(rf"\b{re.escape(banned)}\b", lower_all) if banned.isalpha() else (banned in lower_all):
+            issues.append(f"Banned phrase, code/repo link, or 'free' offer detected: '{banned}'")
 
     if require_price and not PRICE_REGEX.search(body):
         issues.append("Missing explicit price (e.g., EUR 350, $380, £300, 350 CHF).")
@@ -381,20 +535,37 @@ def calibrate_word_count(body: str, lang: str = "en", min_words: int = 120, max_
         else:
             body = body + " " + best_addon
 
-    # If slightly over 150 words, tighten non-essential modifiers first while preserving the GitHub system ref and question
+    # If slightly over 150 words, tighten non-essential modifiers first while keeping preview refs and question
     wc = count_words(body)
     if wc > max_words:
         trim_map = [
             (" and includes a post-deployment verification re-scan once your team applies the changes", ""),
             (" and includes a post-deployment verification re-scan", ""),
             (" with zero intrusive traffic", ""),
-            (" (scorecard and system spec PDF attached, code at github.com/kaledbouchagraoui7-bot/medtech-regulatory-compliance-suite)", " (scorecard & system PDF attached, GitHub: medtech-regulatory-compliance-suite)"),
+            (" (1-page risk preview and methodology guide attached)", " (1-page preview & guide attached)"),
+            (" (scorecard preview and guide attached)", " (preview & guide attached)"),
+            (" (1-Seiten-Risikovorschau und System-Leitfaden im Anhang)", " (Risikovorschau & Leitfaden im Anhang)"),
+            (" (aperçu visuel 1 page et guide méthodologique joints)", " (aperçu 1 page et guide joints)"),
+            (" (aperçu visuel et guide joints)", " (aperçu et guide joints)"),
             ("Would you like me to send over the scope to get started?", "Shall I send the scope?"),
+            ("Should I send over the scope to get started?", "Shall I send the scope?"),
             ("Soll ich Ihnen den Projektvorschlag zusenden?", "Soll ich das Angebot senden?"),
             ("Souhaitez-vous mettre cela en place cette semaine ?", "Puis-je envoyer l'offre ?"),
+            ("Puis-je envoyer le périmètre détaillé ?", "Puis-je envoyer l'offre ?"),
+            ("the full Word executive audit, 4-sheet Excel risk register, ", "the Word/Excel audit dossier, "),
+            ("the Word executive audit, 4-sheet Excel risk register, ", "the Word/Excel audit dossier, "),
             ("the full Word and 4-sheet Excel audit dossier, ", "the Word/Excel audit dossier, "),
+            ("das vollständige Word- und 4-Blatt-Excel-Auditpaket, ", "das Word/Excel-Auditpaket, "),
             ("das vollständige Word- und Excel-Auditpaket, ", "das Word/Excel-Auditpaket, "),
+            ("le rapport Word, le classeur Excel 4 onglets, ", "le dossier Word/Excel 4 onglets, "),
+            ("le rapport Word, l'Excel 4 onglets, ", "le dossier Word/Excel 4 onglets, "),
             ("le rapport complet Word et Excel, ", "le dossier Word/Excel, "),
+            ("prêts à appliquer ", ""),
+            ("fertige IT-Korrekturdateien", "IT-Korrekturdateien"),
+            ("turnkey IT fix files", "IT fix files"),
+            ("et l'attestation re-vérifiée", "et l'attestation"),
+            ("plus a re-verified attestation PDF", "plus attestation PDF"),
+            ("and a re-verified attestation PDF", "plus attestation PDF"),
             (", plus a post-deployment verification scan", ""),
             (" sowie den Kontroll-Scan nach der Umsetzung", ""),
             (", ainsi que la contre-visite de validation", ""),
@@ -490,20 +661,37 @@ def run_qa_humanizer_loop(
 
 def default_price_for_country(country: str, sector: str = "") -> str:
     c = (country or "").upper()
-    is_medtech_cro = sector in ("cro_reg", "medtech_cer")
+    is_premium = sector in (
+        "cro_reg",
+        "medtech_cer",
+        "MedTech RA",
+        "Boutique RA",
+        "MedTech OEM",
+        "Diagnostics",
+        "Clinical Genomics",
+        "Biotech / CRO",
+        "Dermo-Cosmetics",
+        "Nutraceuticals",
+        "Veterinary Pharma",
+        "CDMO / Pharma",
+        "HealthTech",
+        "Wealth & Family Office",
+        "wealth_office",
+        "healthtech",
+    )
     if c == "UK":
-        return "£380" if is_medtech_cro else "£300"
+        return "£380" if is_premium else "£300"
     if c == "US":
-        return "$450" if is_medtech_cro else "$380"
+        return "$450" if is_premium else "$380"
     if c == "CA":
-        return "CAD 540" if is_medtech_cro else "CAD 460"
+        return "CAD 540" if is_premium else "CAD 460"
     if c == "AU":
-        return "AUD 580" if is_medtech_cro else "AUD 490"
+        return "AUD 580" if is_premium else "AUD 490"
     if c == "CH":
-        return "450 CHF" if is_medtech_cro else "350 CHF"
+        return "450 CHF" if is_premium else "350 CHF"
     if c == "SG":
-        return "SGD 520" if is_medtech_cro else "SGD 440"
-    return "EUR 420" if is_medtech_cro else "EUR 350"
+        return "SGD 520" if is_premium else "SGD 440"
+    return "EUR 420" if is_premium else "EUR 350"
 
 
 def summarize_technical_gaps(audit: dict[str, Any], lang: str = "en") -> list[str]:
@@ -597,15 +785,15 @@ def build_evidence_email(
             "Diese Korrekturen verhindern, dass Mandanten-E-Mails im Spam landen, und sichern Ihre "
             "Online-Formulare direkt nach DSGVO/revDSG ab."
         )
-        subj = f"Technisches Audit & Bewertungssystem für {domain} ({score}/100)"
+        subj = f"1-Seiten-Risikovorschau & Audit für {domain} ({score}/100)"
         body = (
             f"Guten Tag liebes {company_name} Team,\n\n"
-            f"{rev_line} Ich habe {domain} mit meinem passiven 25-Kontrollen-System Sentinel "
-            f"(Scorecard & System-PDF im Anhang, GitHub: medtech-regulatory-compliance-suite) geprüft, "
-            f"wobei Ihre Seite aktuell {score}/100 Punkte erreicht.\n\n"
+            f"{rev_line} Ich habe für {domain} eine 1-Seiten-Risikovorschau nach dem 25-Kontrollen-Modell "
+            f"(1-Seiten-Risikovorschau und System-Leitfaden im Anhang) erstellt, wobei Ihre Seite aktuell "
+            f"{score}/100 Punkte erreicht.\n\n"
             f"Konkret fielen diese Punkte auf: {tech_joined}. {prob_line}\n\n"
-            f"Für ein fixes Honorar von {price} liefere ich das vollständige Word- und Excel-Auditpaket, "
-            f"direkt einfügbare DNS- und Server-Konfigurationen für {domain} sowie den Kontroll-Scan nach der Umsetzung. "
+            f"Für ein fixes Honorar von {price} liefere ich das vollständige Word- und 4-Blatt-Excel-Auditpaket, "
+            f"fertige IT-Korrekturdateien für {domain} sowie den Kontroll-Scan nach der Umsetzung. "
             f"Soll ich Ihnen den Projektvorschlag zusenden?\n\n"
             f"Falls kein Bedarf besteht, genügt ein kurzes «Nein», dann schreibe ich nicht erneut.\n\n"
             f"Freundliche Grüsse\nKaled Bouchagraoui"
@@ -621,16 +809,15 @@ def build_evidence_email(
             "Corriger ces points évite que vos courriels soient bloqués en spam et sécurise vos "
             "formulaires en ligne conformément au RGPD."
         )
-        subj = f"Évaluation technique de {domain} ({score}/100) & système d'audit joint"
+        subj = f"Aperçu risques & conformité 1 page pour {domain} ({score}/100)"
         body = (
             f"Bonjour l'équipe {company_name},\n\n"
-            f"{rev_line} J'ai évalué {domain} avec mon système passif à 25 contrôles Sentinel "
-            f"(scorecard PNG et PDF du système joints, GitHub : medtech-regulatory-compliance-suite), "
-            f"où votre site obtient {score}/100.\n\n"
+            f"{rev_line} J'ai préparé un aperçu 1 page des risques pour {domain} sur 25 contrôles "
+            f"(aperçu visuel et guide joints), où votre site obtient {score}/100.\n\n"
             f"L'analyse relève notamment : {tech_joined}. {prob_line}\n\n"
-            f"Pour un forfait fixe de {price}, je fournis le rapport complet Word et Excel, les "
-            f"configurations DNS et serveur prêtes à déployer pour {domain}, ainsi que la contre-visite de validation. "
-            f"Souhaitez-vous mettre cela en place cette semaine ?\n\n"
+            f"Pour un forfait fixe de {price}, je fournis le rapport Word, l'Excel 4 onglets, les "
+            f"correctifs IT prêts à appliquer pour {domain}, et l'attestation re-vérifiée. "
+            f"Puis-je envoyer le périmètre détaillé ?\n\n"
             f"Si ce n'est pas pertinent, un simple « non » suffit et je ne relancerai pas.\n\n"
             f"Cordialement,\nKaled Bouchagraoui"
         )
@@ -645,16 +832,15 @@ def build_evidence_email(
         "Fixing these gaps stops strict corporate spam filters from flagging your outbound emails and "
         "protects visitors submitting enquiries through your site."
     )
-    subj = f"Technical evaluation of {domain} ({score}/100) + system spec attached"
+    subj = f"1-page GDPR & domain risk preview for {domain} ({score}/100)"
     body = (
         f"Hello {company_name} team,\n\n"
-        f"{rev_line} I evaluated {domain} using my passive 25-control Sentinel system "
-        f"(scorecard and system spec PDF attached, code at github.com/kaledbouchagraoui7-bot/medtech-regulatory-compliance-suite), "
-        f"where your site scored {score}/100.\n\n"
+        f"{rev_line} I prepared a 1-page risk preview for {domain} across 25 checks "
+        f"(scorecard preview and guide attached), where your site scored {score}/100.\n\n"
         f"Specifically, the scan flagged that {tech_joined}. {prob_line}\n\n"
-        f"For a flat fee of {price}, I deliver the full Word and 4-sheet Excel audit dossier, copy-paste DNS and "
-        f"HTTP header configs for {domain}, plus a post-deployment verification scan. "
-        f"Would you like me to send over the scope to get started?\n\n"
+        f"For {price} flat, I deliver the Word executive audit, 4-sheet Excel risk register, "
+        f"turnkey IT fix files for {domain}, and a re-verified attestation PDF. "
+        f"Should I send over the scope to get started?\n\n"
         f"If this is not a priority right now, simply reply 'no' and I will not follow up.\n\n"
         f"Best regards,\nKaled Bouchagraoui"
     )

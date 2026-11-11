@@ -1,0 +1,4 @@
+Contact: mailto:kaledbouchagraoui7@gmail.com
+Expires: 2027-12-31T23:59:00.000Z
+Preferred-Languages: en, fr
+Policy: https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/terms.html

@@ -16,9 +16,11 @@ from outreach_qa_dispatcher import (
     build_evidence_email,
     count_words,
     evaluate_4_detectors,
+    is_target_icp_entity,
     load_dotenv_files,
     process_dispatch_queue,
     run_qa_humanizer_loop,
+    verify_professionalism,
 )
 
 
@@ -142,6 +144,7 @@ class TestOutreachQADispatcher(unittest.TestCase):
         self.assertGreaterEqual(wc, 120)
         self.assertLessEqual(wc, 150)
         self.assertNotIn("for free", body.lower())
+        self.assertNotIn("github.com", body.lower())
         self.assertIn("£", body)
 
     def test_load_dotenv_files_reads_custom_env_without_overwriting(self) -> None:
@@ -217,6 +220,75 @@ class TestOutreachQADispatcher(unittest.TestCase):
         self.assertEqual(statuses[("pureclinic.ch", "info@pureclinic.ch")], "BLOCKED_SUPPRESSED")
         self.assertEqual(statuses[("treuhand-demo.ch", "info@treuhand-demo.ch")], "APPROVED")
         self.assertEqual(res["approved_count"], 2)
+
+    def test_icp_filter_blocks_consumer_clinics_and_big4_and_allows_b2b_icps(self) -> None:
+        blocked_cases = [
+            ("OT&P Healthcare HK", "otandp.com", "Healthcare"),
+            ("Goji Women's and Family Physiotherapy", "gojiphysio.com", "Healthcare"),
+            ("Andrew Choong Vascular Surgery", "drandrewchoong.com", "Healthcare"),
+            ("Digestive Centre", "digestivecentre.com.sg", "Healthcare"),
+            ("Sankar's Health Care Scans & Diagnostics", "shcd.in", "Diagnostics"),
+            ("Arockiya Speciality Clinic & Diagnostic", "arockiyaclinic.com", "Healthcare"),
+            ("Santé Labs", "santelabs.com", "Diagnostics"),
+            ("Fukiage Maternity Clinic", "fukiage-mclinic.jp", "Healthcare"),
+            ("Highmark Dental LLC", "highmarkcares.com", "Healthcare"),
+            ("Christic Institute", "romeroinstitute.org", "Legal/IP"),
+            ("Grant Thornton Taiyo LLC", "gtjapan.or.jp", "Accounting/Tax"),
+            ("Fiducial Expertise", "fiducial.fr", "Accounting/Tax"),
+        ]
+        for comp, dom, sec in blocked_cases:
+            ok, reason = is_target_icp_entity(comp, dom, sec)
+            self.assertFalse(ok, f"Expected off-ICP block for {comp} ({dom}), got OK")
+            self.assertTrue(reason)
+
+        allowed_cases = [
+            ("Cabinet Berenfus", "berenfus-sante.fr", "Accounting/Tax"),
+            ("Stanley Advisors", "stanley.com", "Wealth & Family Office"),
+            ("Ultraceuticals", "ultraceuticals.in", "MedTech RA"),
+            ("Castor EDC", "castoredc.com", "HealthTech"),
+            ("Stanhope Capital", "stanhopecapital.com", "Wealth & Family Office"),
+            ("Spendesk SaaS", "spendesk.com", "B2B SaaS"),
+            ("Laboratoire SVR", "labo-svr.com", "Dermo-Cosmetics"),
+            ("Laboratoire Nutergia", "nutergia.com", "Nutraceuticals"),
+            ("ECO Animal Health", "ecoanimalhealth.com", "Veterinary Pharma"),
+            ("Naobios Biomanufacturing", "naobios.com", "CDMO / Pharma"),
+            ("Greenlight Guru", "greenlight.guru", "MedTech RA"),
+            ("Banner & Witcoff", "bannerwitcoff.com", "Legal/IP"),
+        ]
+        for comp, dom, sec in allowed_cases:
+            ok, reason = is_target_icp_entity(comp, dom, sec)
+            self.assertTrue(ok, f"Expected ICP pass for {comp} ({dom}, {sec}), blocked: {reason}")
+
+    def test_verify_professionalism_rejects_raw_code_repo_and_snippets(self) -> None:
+        base_body = (
+            "Hi Team,\n\n"
+            "While benchmarking vendor risk for example.com, I prepared a 1-page review showing "
+            "16 of 25 controls passed alongside the attached scorecard preview and methodology PDF.\n\n"
+            "Two public items need review: DMARC enforcement and HTTP HSTS headers. Fixing these protects "
+            "partner communication and avoids client vendor-audit delays.\n\n"
+            "If helpful, I can deliver the full Word executive audit, 4-sheet Excel risk log, "
+            "PLACEHOLDER, and re-verified attestation PDF within 48 hours for EUR 350 flat.\n\n"
+            "If not relevant right now, simply reply 'no' and I won't follow up.\n\n"
+            "Best regards,\nKaled Bouchagraoui"
+        )
+        for bad_phrase in [
+            "github.com/kaled/repo",
+            "remediation snippets",
+            "config snippets",
+            "screening scripts",
+            "python scripts",
+            "source code",
+        ]:
+            ok, issues = verify_professionalism(
+                subject="Example (example.com) - 1-page risk preview",
+                body=base_body.replace("PLACEHOLDER", bad_phrase),
+                to_email="info@example.com",
+                required_domain="example.com",
+                min_words=80,
+                max_words=160,
+            )
+            self.assertFalse(ok, f"Expected verify_professionalism to reject '{bad_phrase}'")
+            self.assertTrue(any("Banned phrase" in x for x in issues))
 
 
 if __name__ == "__main__":

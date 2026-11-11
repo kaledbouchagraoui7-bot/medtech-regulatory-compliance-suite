@@ -138,6 +138,10 @@ def generate_unified_executive_brief(
         "   - 300-DPI Print-Ready PRISMA 2020 Flow Diagram (.png & .pdf)"
     )
 
+    from legal_terms import append_terms_section_docx
+
+    append_terms_section_docx(doc, track="unified_dossier")
+
     doc.save(str(out_docx))
 
 
@@ -185,13 +189,20 @@ def build_unified_medtech_dossier(
 
     # 2. Run Clinical PRISMA 2020 Pilot Package Generator
     tmp_prisma = base_out_path / "_tmp_prisma"
-    prisma_res = build_pilot_package(records_csv, config_json, base_output_dir=tmp_prisma)
+    prisma_res = build_pilot_package(
+        records_csv,
+        config_json,
+        base_output_dir=tmp_prisma,
+        include_legal_files=True,
+    )
     dir_02 = dossier_dir / "02_Clinical_PRISMA_Pilot"
     shutil.copytree(prisma_res["package_dir"], dir_02)
     shutil.rmtree(tmp_prisma, ignore_errors=True)
 
-    # 3. Generate Unified Executive Brief (.docx)
+    # 3. Generate Unified Executive Brief (.docx) & Terms Bundle
     import json
+    from legal_terms import render_terms_txt
+
     cfg_data = json.loads(Path(config_json).read_text(encoding="utf-8"))
     brief_docx = dossier_dir / "00_Unified_Executive_Brief.docx"
     generate_unified_executive_brief(
@@ -200,6 +211,8 @@ def build_unified_medtech_dossier(
         prisma_counts=prisma_res["prisma"],
         config_data=cfg_data,
     )
+    terms_txt = dossier_dir / "TERMS_OF_SERVICE_AND_DISCLAIMER.txt"
+    terms_txt.write_text(render_terms_txt(track="unified_dossier"), encoding="utf-8")
 
     # 4. Zip the entire Unified MedTech Dossier
     zip_path = base_out_path / f"{slug}_unified_medtech_dossier.zip"

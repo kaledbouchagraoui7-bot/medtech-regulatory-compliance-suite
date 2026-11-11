@@ -206,9 +206,9 @@ def build_client_brief_html(audit: dict[str, Any]) -> str:
         pill_cls = "pill-priority" if is_fail else "pill-advisory"
         pill_txt = "ACTION NEEDED" if is_fail else "REVIEW"
         cid = html.escape(str(g.get("id", "")))
-        title = html.escape(_humanize_finding_note(str(g.get("title", "")), 44))
-        evidence = html.escape(_humanize_finding_note(str(g.get("evidence", "")), 76))
-        impact = html.escape(_humanize_finding_note(str(g.get("impact", "")), 86))
+        title = html.escape(_humanize_finding_note(str(g.get("title", "")), 64))
+        evidence = html.escape(_humanize_finding_note(str(g.get("evidence", "")), 84))
+        impact = html.escape(_humanize_finding_note(str(g.get("impact", "")), 92))
         gaps_rows.append(
             f"""
             <tr>
@@ -500,8 +500,8 @@ def build_client_brief_html(audit: dict[str, Any]) -> str:
   </div>
 
   <div class="footer">
-    <span>Prepared by Kaled Bouchagraoui &middot; Passive External Posture Review (RFC 7489 DMARC / GDPR / Swiss nFADP / OWASP / WCAG 2.1)</span>
-    <span>Methodology &amp; Open-Source Audit Scripts: github.com/kaledbouchagraoui7-bot/medtech-regulatory-compliance-suite</span>
+    <span>Kaled Bouchagraoui &middot; Passive Public Observation Only &middot; Technical QA Aid (Not Legal Advice; Liability Capped at Fees Paid)</span>
+    <span>Samples &amp; Terms: kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite</span>
   </div>
 </body>
 </html>"""
@@ -715,8 +715,8 @@ def build_ra_command_center_html(report: dict[str, Any]) -> str:
   </div>
 
   <div class="footer">
-    <span>RA 5-Painkiller Command Center &amp; Spider-Web Multi-Vertical Architecture</span>
-    <span>github.com/kaledbouchagraoui7-bot/medtech-regulatory-compliance-suite</span>
+    <span>RA Command Center &middot; Automated QA Aid Only (Qualified RA/PRRC Sign-Off Required; Liability Capped at Fees Paid)</span>
+    <span>Samples &amp; Terms: kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite</span>
   </div>
 </body>
 </html>"""

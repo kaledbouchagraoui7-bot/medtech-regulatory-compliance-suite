@@ -1,0 +1,39 @@
+{
+  "provider": {
+    "brand_name": "Sentinel Regulatory & Technical Operations",
+    "operator_name": "Kaled Bouchagraoui",
+    "legal_status": "Pre-commercial technical studio (complimentary EUR 0 previews require no invoicing; any paid B2B contract executed exclusively via legal-representative authorization under French Civil Code Art. 388-2 & 389 / formal authorized billing entity prior to invoice issuance)",
+    "siret": "PENDING_LEGAL_ENTITY_AUTH",
+    "jurisdiction_city": "Strasbourg, France",
+    "governing_law": "Laws of France",
+    "vat_notice": "TVA non applicable, art. 293 B du CGI",
+    "website_url": "https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/",
+    "contact_email": "kaledbouchagraoui7@gmail.com",
+    "terms_url": "https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/terms.html",
+    "cgv_url": "https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/cgv.html",
+    "privacy_url": "https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/privacy.html"
+  },
+  "payment": {
+    "invoicing_platform": "Tiime",
+    "stripe_mode": "payment_links_no_code",
+    "stripe_payment_links": {
+      "sentinel_compliance": "",
+      "pms_openfda_psur": "",
+      "clinical_lit_prisma": "",
+      "unified_dossier": "",
+      "ra_command_center": ""
+    },
+    "bank_transfer": {
+      "account_holder": "Kaled Bouchagraoui",
+      "iban": "IBAN_PENDING_TIIME_OR_BANK",
+      "bic": "BIC_PENDING"
+    },
+    "payment_terms": "Complimentary 1-page diagnostic previews are provided at EUR 0.00. Any paid multi-file engagement requires explicit written scope confirmation and formal authorized legal-representative billing structure prior to payment collection via Tiime invoice / Stripe Payment Link / SEPA."
+  },
+  "operations": {
+    "intake_form_url": "",
+    "delivery_portal_base_url": "",
+    "default_turnaround_hours": 48,
+    "included_verification_rescan_days": 14
+  }
+}
