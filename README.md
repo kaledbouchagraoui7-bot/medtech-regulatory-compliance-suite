@@ -2,16 +2,15 @@
   <img src="assets/sentinel_logo_full.png" alt="Sentinel — MedTech, Privacy & Regulatory Suite" width="760" />
 </div>
 
-# Unified MedTech, CRO & Digital Health Regulatory Compliance Suite
+# Public Data & Document-Prep CLI Orchestrator
 
-**End-to-End Automation for (1) External Digital Privacy, DMARC & Edge Cybersecurity (Swiss nFADP / EU GDPR / EU MDR Annex I GSPR 17.2) and (2) Clinical Evaluation Literature & PRISMA 2020 Evidence Synthesis (EU MDR Annex XIV / MEDDEV 2.7/1 Rev 4).**
+**Open-source Python CLI combining (1) passive DNS/HTTP checks and (2) PubMed/Europe PMC PRISMA 2020 mechanical prep into structured Word/Excel outputs.**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Regulatory Scope](https://img.shields.io/badge/Scope-EU_MDR_%7C_Swiss_nFADP_%7C_PRISMA_2020-0D9488.svg)](#architecture--dual-engine-design)
-[![Storefront](https://img.shields.io/badge/Service_Catalog-Storefront_%26_Legal_(EN%2FFR)-0F172A.svg)](https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/)
+[![Portal](https://img.shields.io/badge/Flagship_Demo-PRISMA_2020_Explorer-0D9488.svg)](https://kaledbouchagraoui7-bot.github.io/computational-biology-portfolio/)
 
-> **Executive Storefront & Scope Preview:** Explore fixed-scope 48h client deliverables, interactive DNS/MAUDE/PRISMA pre-checks, Design Partner Pilot intake, and bilingual legal copy at **[Executive Storefront, Live Pre-Check & Bilingual Terms (EN / FR)](https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/)**.
+> **Open-Source Student Portfolio (MIT):** This repository is the CLI orchestrator. For the flagship research tool, peer-reviewed ground-truth benchmark, and zero-install browser demo, see **[`computational-biology-portfolio`](https://github.com/kaledbouchagraoui7-bot/computational-biology-portfolio)** (**[Launch Web Demo](https://kaledbouchagraoui7-bot.github.io/computational-biology-portfolio/)**).
 
 ---
 

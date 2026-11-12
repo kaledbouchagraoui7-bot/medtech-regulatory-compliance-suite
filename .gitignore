@@ -36,6 +36,9 @@ follow_up_scheduler.py
 test_follow_up_scheduler.py
 build_sniper_outreach_deck.py
 test_sniper_outreach_deck.py
+*.csv
+!records.csv
+*dashboard*.html
 *.log
 
 
