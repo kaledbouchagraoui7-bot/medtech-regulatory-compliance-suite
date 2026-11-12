@@ -22,6 +22,7 @@ from openpyxl.styles import Alignment, Border, Font, Side
 from client_ops_automation import (
     _curated_to_pilot_csv,
     create_engagement,
+    resolve_payment_block,
     run_delivery_for_engagement,
     stage_delivery,
     stage_onboarding,
@@ -37,6 +38,7 @@ from legal_terms import (
     get_privacy_clauses,
     load_provider_config,
     render_terms_txt,
+    set_custom_domain,
 )
 
 
@@ -206,6 +208,9 @@ class TestLegalAndClientOps(unittest.TestCase):
         self.assertIn("data-ph-fr", idx_txt)
         self.assertIn("device_report_product_code", idx_txt)
         self.assertIn("sentinel_avatar_github.png", idx_txt)
+        self.assertIn("selectIntakeMode", idx_txt)
+        self.assertIn('id="f-mode"', idx_txt)
+        self.assertIn("Design Partner Pilot", idx_txt)
         self.assertNotIn("fonts.googleapis.com", idx_txt)
         self.assertNotIn("GenevaOS", idx_txt)
         self.assertNotIn("`.docx`", idx_txt)
@@ -432,6 +437,55 @@ class TestLegalAndClientOps(unittest.TestCase):
         draft_txt = Path(staged["draft_onboarding_path"]).read_text(encoding="utf-8")
         self.assertIn("EUR 650", draft_txt)
         self.assertIn("TERMS_OF_SERVICE_AND_DISCLAIMER.txt", draft_txt)
+
+    def test_custom_domain_binding_and_design_partner_pilot_mode(self) -> None:
+        cfg_file = self.temp_dir / "client_ops_config.json"
+        base_cfg = load_provider_config(self.repo_dir / "client_ops_config.json")
+        cfg_file.write_text(json.dumps(base_cfg, indent=2), encoding="utf-8")
+
+        updated_cfg = set_custom_domain("sentinel-regulatory.eu", config_path=cfg_file)
+        prov = updated_cfg["provider"]
+        self.assertEqual(prov["custom_domain"], "sentinel-regulatory.eu")
+        self.assertEqual(prov["website_url"], "https://sentinel-regulatory.eu/")
+        self.assertEqual(prov["terms_url"], "https://sentinel-regulatory.eu/terms.html")
+        self.assertEqual(prov["cgv_url"], "https://sentinel-regulatory.eu/cgv.html")
+        self.assertEqual(prov["privacy_url"], "https://sentinel-regulatory.eu/privacy.html")
+
+        site_custom = self.temp_dir / "site_custom"
+        assets = build_legal_web_pages(site_custom, updated_cfg)
+        self.assertIn("https://sentinel-regulatory.eu/", assets["index_html"].read_text(encoding="utf-8"))
+        self.assertIn("https://sentinel-regulatory.eu/nfadp-audit.html", assets["sitemap_xml"].read_text(encoding="utf-8"))
+
+        reset_cfg = set_custom_domain("", config_path=cfg_file)
+        self.assertEqual(reset_cfg["provider"]["custom_domain"], "")
+        self.assertIn("github.io", reset_cfg["provider"]["website_url"])
+
+        pilot_eng = create_engagement(
+            company="Pilot Biotech SAS",
+            domain="pilot-biotech.fr",
+            contact_email="qa@pilot-biotech.fr",
+            track="pms",
+            country="FR",
+            sector="Biotech / CRO",
+            engagement_mode="design_partner_pilot",
+            engagements_json=self.eng_json,
+            workspace_dir=self.temp_dir,
+        )
+        self.assertEqual(pilot_eng["engagement_mode"], "design_partner_pilot")
+        self.assertEqual(pilot_eng["fee_label"], "EUR 0.00 (Design Partner Pilot)")
+        pblock = resolve_payment_block("pms_openfda_psur", pilot_eng["fee_label"], updated_cfg, engagement_mode="design_partner_pilot")
+        self.assertIn("Zero-Cost Design Partner Pilot", pblock)
+        self.assertIn("Reciprocity Request", pblock)
+        onb = stage_onboarding(
+            pilot_eng["engagement_id"],
+            engagements_json=self.eng_json,
+            config_path=cfg_file,
+            create_gmail_draft=False,
+            send_email=False,
+        )
+        onb_txt = Path(onb["draft_path"]).read_text(encoding="utf-8")
+        self.assertIn("Design Partner Pilot", onb_txt)
+        self.assertNotIn("Stripe Payment Link", onb_txt)
 
 
 if __name__ == "__main__":

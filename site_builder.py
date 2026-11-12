@@ -326,6 +326,12 @@ def _storefront_core_js(intake_url_json: str, email_esc: str) -> str:
       var comp = document.getElementById('f-company');
       if (comp) comp.focus();
     }
+    function selectIntakeMode(modeVal) {
+      var sel = document.getElementById('f-mode');
+      if (sel) sel.value = modeVal;
+      var comp = document.getElementById('f-company');
+      if (comp) comp.focus();
+    }
     function setLang(lang) {
       var isFr = (lang === 'fr');
       document.body.classList.toggle('is-fr', isFr);
@@ -335,7 +341,7 @@ def _storefront_core_js(intake_url_json: str, email_esc: str) -> str:
       if (bEn) bEn.classList.toggle('active', !isFr);
       if (bFr) bFr.classList.toggle('active', isFr);
 
-      var optEls = document.querySelectorAll('#f-track option[data-en]');
+      var optEls = document.querySelectorAll('#f-track option[data-en], #f-mode option[data-en]');
       for (var i = 0; i < optEls.length; i++) {
         optEls[i].textContent = isFr ? optEls[i].getAttribute('data-fr') : optEls[i].getAttribute('data-en');
       }
@@ -381,32 +387,49 @@ def _storefront_core_js(intake_url_json: str, email_esc: str) -> str:
     }
     function buildIntakePayload() {
       var isFr = isFrLang();
+      var modeEl = document.getElementById('f-mode');
       var compEl = document.getElementById('f-company');
       var domEl = document.getElementById('f-domain');
       var trkEl = document.getElementById('f-track');
       var notesEl = document.getElementById('f-notes');
+      var modeVal = modeEl ? modeEl.value : 'complimentary_preview';
+      var isPilot = (modeVal === 'design_partner_pilot');
       var comp = (compEl && compEl.value.trim()) ? compEl.value.trim() : (isFr ? 'Organisation' : 'Organization');
       var dom = (domEl && domEl.value.trim()) ? domEl.value.trim() : 'N/A';
       var trk = trkEl ? trkEl.value : 'Track 01 - Sentinel 25-Control External Audit';
       var notes = (notesEl && notesEl.value.trim()) ? notesEl.value.trim() : 'N/A';
       if (isFr) {
-        var subjFr = 'Demande apercu gratuit (1 page) - ' + comp + ' (' + trk + ')';
+        var modeLblFr = isPilot
+          ? 'Pilote Partenaire (0,00 EUR — pack complet en echange de 2-3 phrases de retour QA anonymise)'
+          : 'Apercu diagnostique passif 1 page (0,00 EUR, sans engagement)';
+        var subjFr = (isPilot ? 'Candidature Pilote Partenaire (0 EUR) - ' : 'Demande apercu gratuit (1 page) - ') + comp + ' (' + trk + ')';
+        var askFr = isPilot
+          ? 'Nous souhaitons evaluer un pack Pilote Partenaire a 0,00 EUR (Word + Excel + 300 DPI + ALCOA+) sous observation passive, en echange d un bref retour ecrit sur la precision QA.'
+          : 'Merci de preparer un apercu diagnostique passif gratuit (1 page, 0 EUR) ainsi que la confirmation forfaitaire sous conditions passives.';
         var bodyFr =
+          'Format : ' + modeLblFr + '\\n' +
           'Societe : ' + comp + '\\n' +
           'Domaine / Dispositif / Sujet : ' + dom + '\\n' +
           'Module : ' + trk + '\\n' +
           'Precisions : ' + notes + '\\n\\n' +
-          'Merci de preparer un apercu diagnostique passif gratuit (1 page, 0 EUR) ainsi que la confirmation forfaitaire sous conditions passives.';
-        return { comp: comp, dom: dom, trk: trk, notes: notes, subj: subjFr, body: bodyFr };
+          askFr;
+        return { comp: comp, dom: dom, trk: trk, mode: modeVal, notes: notes, subj: subjFr, body: bodyFr };
       }
-      var subj = 'Complimentary 1-Page Scope Preview - ' + comp + ' (' + trk + ')';
+      var modeLblEn = isPilot
+        ? 'Design Partner Pilot (EUR 0.00 / CHF 0.00 — scoped package in exchange for short QA feedback)'
+        : 'Complimentary 1-Page Passive Preview (EUR 0.00, no obligation)';
+      var subj = (isPilot ? 'Design Partner Pilot Application (EUR 0.00) - ' : 'Complimentary 1-Page Scope Preview - ') + comp + ' (' + trk + ')';
+      var askEn = isPilot
+        ? 'We would like to run a zero-cost Design Partner Pilot deliverable pack (Word + Excel + 300-DPI brief + ALCOA+ log) under passive observation terms in exchange for brief written QA feedback.'
+        : 'Please prepare a complimentary 1-page technical preview and fixed-scope confirmation under passive observation terms.';
       var body =
+        'Request Format: ' + modeLblEn + '\\n' +
         'Company: ' + comp + '\\n' +
         'Domain / Product Scope: ' + dom + '\\n' +
         'Module: ' + trk + '\\n' +
         'Notes: ' + notes + '\\n\\n' +
-        'Please prepare a complimentary 1-page technical preview and fixed-scope confirmation under passive observation terms.';
-      return { comp: comp, dom: dom, trk: trk, notes: notes, subj: subj, body: body };
+        askEn;
+      return { comp: comp, dom: dom, trk: trk, mode: modeVal, notes: notes, subj: subj, body: body };
     }
     function handleIntakeSubmit(ev) {
       ev.preventDefault();
@@ -2137,28 +2160,41 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
       <div class="container">
         <div class="intake-box">
           <div>
-            <div class="eyebrow"><span class="lang-en">Zero-Obligation First Step</span><span class="lang-fr">Premier Pas Sans Engagement</span></div>
+            <div class="eyebrow"><span class="lang-en">Zero-Obligation First Step &middot; Design Partner Pilot</span><span class="lang-fr">Premier Pas Sans Engagement &middot; Programme Pilote Partenaire</span></div>
             <h2 style="font-family:Georgia,serif;font-size:26px;margin:0 0 10px 0;color:var(--navy);">
-              <span class="lang-en">Request a Complimentary 1-Page Preview</span>
-              <span class="lang-fr">Demander Votre Aperçu Gratuit (1 Page)</span>
+              <span class="lang-en">Request a Complimentary 1-Page Preview or Apply for a EUR 0.00 Pilot</span>
+              <span class="lang-fr">Aperçu Gratuit (1 Page) ou Candidature Pilote Partenaire (0,00 EUR)</span>
             </h2>
             <p class="lang-en" style="color:var(--muted);font-size:14.5px;">
-              Provide your corporate domain or target device/literature scope. Within 48 hours we prepare a strictly passive 1-page diagnostic snapshot (EUR 0.00, no obligation) plus an exact fixed-fee confirmation sheet for internal QA approval.
+              Provide your corporate domain or target device/literature scope. Choose either a passive 1-page diagnostic snapshot (EUR 0.00) OR apply for our scoped <strong>Design Partner Pilot (EUR 0.00 / CHF 0.00)</strong> &mdash; full Word, Excel &amp; 300-DPI deliverable pack in exchange for candid written QA feedback.
             </p>
             <p class="lang-fr" style="color:var(--muted);font-size:14.5px;">
-              Indiquez votre domaine d'entreprise ou thème dispositif/clinique. Sous 48h, recevez un aperçu diagnostique passif d'une page (0,00 EUR, sans engagement) accompagné du périmètre forfaitaire exact pour validation Qualité/AR.
+              Indiquez votre domaine d'entreprise ou thème dispositif/clinique. Demandez soit un aperçu diagnostique d'une page (0,00 EUR), soit un <strong>Pilote Partenaire (0,00 EUR)</strong> incluant le pack complet Word, Excel et 300 DPI en échange d'un retour écrit sur la qualité QA.
+            </p>
+            <p style="margin:0 0 10px 0;">
+              <button type="button" class="btn-outline" style="padding:7px 12px;font-size:13px;" onclick="selectIntakeMode('design_partner_pilot');">
+                <span class="lang-en">Pre-Select EUR 0.00 Design Partner Pilot &rarr;</span>
+                <span class="lang-fr">Pr&eacute;-s&eacute;lectionner le Pilote Partenaire 0,00 EUR &rarr;</span>
+              </button>
             </p>
             <div class="notice-box">
               <strong>
                 <span class="lang-en">Legal &amp; Commercial Transparency (v{TERMS_VERSION}):</span>
                 <span class="lang-fr">Transparence Juridique &amp; Facturation (v{TERMS_VERSION}) :</span>
               </strong>
-              <span class="lang-en">Complimentary diagnostics are non-invoiced preparation aids (EUR 0 liability). Any paid mission is formalized cleanly through an authorized French legal billing structure prior to payment or invoice issuance (<a href="terms.html">Terms</a> &middot; <a href="privacy.html">Privacy</a>).</span>
-              <span class="lang-fr">Les diagnostics initiaux d'une page sont gracieux (0 EUR, sans facturation). Toute mission payante est formalisée au préalable via une structure de facturation dûment habilitée conformément au droit français (<a href="cgv.html">CGV</a> &middot; <a href="privacy.html">Confidentialité</a>).</span>
+              <span class="lang-en">Complimentary diagnostics and Design Partner Pilots are non-invoiced preparation aids (EUR 0 liability). Any paid mission is formalized cleanly through an authorized French legal billing structure prior to payment or invoice issuance (<a href="terms.html">Terms</a> &middot; <a href="privacy.html">Privacy</a>).</span>
+              <span class="lang-fr">Les diagnostics initiaux et Pilotes Partenaires sont gracieux (0 EUR, sans facturation). Toute mission payante est formalisée au préalable via une structure de facturation dûment habilitée conformément au droit français (<a href="cgv.html">CGV</a> &middot; <a href="privacy.html">Confidentialité</a>).</span>
             </div>
           </div>
 
           <form onsubmit="return handleIntakeSubmit(event);">
+            <div class="form-row">
+              <label for="f-mode"><span class="lang-en">Request Format</span><span class="lang-fr">Format Souhait&eacute;</span></label>
+              <select id="f-mode">
+                <option value="complimentary_preview" data-en="Complimentary 1-Page Diagnostic Preview (EUR 0.00)" data-fr="Aper&ccedil;u Diagnostique Passif 1 Page (0,00 EUR)">Complimentary 1-Page Diagnostic Preview (EUR 0.00)</option>
+                <option value="design_partner_pilot" data-en="Design Partner Pilot &mdash; Full Pack EUR 0.00 (QA Feedback Exchange)" data-fr="Pilote Partenaire 0,00 EUR &mdash; Pack Complet (contre retour QA)">Design Partner Pilot &mdash; Full Pack EUR 0.00 (QA Feedback Exchange)</option>
+              </select>
+            </div>
             <div class="form-row">
               <label for="f-company"><span class="lang-en">Company / Organization</span><span class="lang-fr">Société / Organisation</span></label>
               <input id="f-company" type="text" required placeholder="e.g. Helvetia MedTech AG" data-ph-en="e.g. Helvetia MedTech AG" data-ph-fr="ex. Helvetia MedTech SA" />

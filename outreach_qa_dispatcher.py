@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 """
-outreach_qa_dispatcher.py — Personalized 120–150 Word B2B Email Generator,
-Single-Pass High-Impact Humanizer, Professionalism Verifier & Multi-Attachment Dispatcher
-=========================================================================================
+outreach_qa_dispatcher.py — Deliverability-Shielded 85–125 Word B2B Email Generator,
+Single-Pass Humanizer, Smoking-Gun Gate, Hygiene Verifier & Multi-Attachment Dispatcher
+========================================================================================
 
 Key Capabilities
 ----------------
-1. Tailored 120–150 Word B2B Emails:
-   - Strictly enforces 120 to 150 words (`120 <= word_count <= 150`).
-   - Integrates site-specific context, public customer-review insights, and concrete problem-solving
-     mapped to the exact failing controls in `*_raw_evidence.json`.
+1. Tailored 85–125 Word B2B Emails:
+   - Strictly enforces 85 to 125 words (`85 <= word_count <= 125`) with <15% AI detector score.
+   - Prepends a crisp receptionist-routing ask when targeting generic mailboxes (`info@`, `contact@`, etc.).
+   - Leads immediately with exact numerical scan evidence + concrete operational problem solved.
    - Includes transparent fixed B2B pricing (EUR 350 / USD 380 / GBP 300 / CHF 350 / AUD 550 / CAD 520)
-     and strictly forbids "for free" / "kostenlos" / "gratuitement".
-   - Attaches BOTH the domain's 300-DPI visual scorecard (`<domain>_scorecard.png`) AND the
-     1-page technical specification of the evaluation system (`Sentinel_25_Control_Evaluation_System.pdf`).
-2. Single-Pass High-Impact Humanizer (`max_passes=1` by default):
-   - Runs once to strip only high-impact stiff AI clichés, robotic transitions, and em-dash overload
-     while preserving natural, warm human cadence.
+     and omits any `-bot.github.io` URL unless a clean custom domain is configured.
+2. Deliverability Shield & Smoking-Gun Trigger Gates:
+   - Verifies email syntax, corporate domain matching, non-disposable/non-webmail rules,
+     and live DoH MX records (rejecting RFC 7505 Null MX `0 .` and parked/sinkhole MXs).
+   - Evaluates severity-based Smoking-Gun triggers across Tracks 1, 2, and 3.
 """
 
 from __future__ import annotations
@@ -103,7 +102,52 @@ BANNED_UNPROFESSIONAL_TERMS = [
     "screening scripts",
     "python scripts",
     "code repository",
+    "kaledbouchagraoui7-bot",
 ]
+
+FREE_WEBMAIL_DOMAINS = {
+    "gmail.com", "googlemail.com", "yahoo.com", "yahoo.fr", "yahoo.co.uk",
+    "hotmail.com", "hotmail.fr", "hotmail.co.uk", "outlook.com", "outlook.fr",
+    "live.com", "live.fr", "msn.com", "icloud.com", "me.com", "mac.com",
+    "proton.me", "protonmail.com", "pm.me", "aol.com", "gmx.com", "gmx.de",
+    "gmx.ch", "web.de", "t-online.de", "orange.fr", "wanadoo.fr", "free.fr",
+    "sfr.fr", "laposte.net", "mail.ru", "yandex.com", "qq.com", "163.com",
+}
+
+DISPOSABLE_EMAIL_DOMAINS = {
+    "mailinator.com", "guerrillamail.com", "guerrillamail.org", "temp-mail.org",
+    "10minutemail.com", "yopmail.com", "yopmail.fr", "trashmail.com",
+    "sharklasers.com", "getnada.com", "dispostable.com", "tempmail.com",
+    "throwawaymail.com", "maildrop.cc", "fakeinbox.com", "mintemail.com",
+    "moakt.com", "tempr.email", "discard.email",
+}
+
+PARKED_OR_SINKHOLE_MX_KEYWORDS = (
+    "sedoparking", "parkingcrew", "bodis.com", "hugedomains", "dan.com",
+    "afternic", "undeveloped.com", "parklogic", "above.com", "cashparking",
+    "domainmarket", "nullmx", "blackhole", "localhost", "sinkhole", "invalid",
+)
+
+RECEPTIONIST_GENERIC_PREFIXES = {
+    "info", "contact", "office", "accueil", "reception", "hello", "bonjour",
+    "team", "mail", "general", "enquiries", "enquiry", "inquiries", "inquiry",
+    "admin", "support", "service", "cs", "scs", "rsp", "letschat", "clients",
+    "client", "secretariat", "cabinet", "kontakt", "kanzlei", "desk",
+    "frontdesk", "post", "mailroom", "customerservice", "clientservice",
+}
+
+FUNCTIONAL_OWNER_PREFIXES = {
+    "regulatory", "ra", "quality", "qa", "qara", "compliance", "dpo", "privacy",
+    "security", "secops", "clinical", "clinicaltrials", "medinfo",
+    "pharmacovigilance", "pv", "pms", "psur", "vigilance", "legal", "juridique",
+    "counsel", "ip", "patents", "partners", "direction", "ceo", "founder",
+    "cto", "ciso",
+}
+
+_SYSTEM_ROLE_BLACKLIST_PREFIXES = (
+    "noreply", "no-reply", "donotreply", "do-not-reply", "mailer-daemon",
+    "postmaster", "bounce", "bounces", "unsubscribe",
+)
 
 PRICE_REGEX = re.compile(
     r"(?:\b(?:CHF|EUR|USD|GBP|AUD|CAD|SGD)\s?\d{2,4}\b|\b\d{2,4}\s?(?:CHF|EUR|USD|GBP|AUD|CAD|SGD|€|\$|£)\b|[€\$£]\s?\d{2,4}\b)",
@@ -285,6 +329,432 @@ def is_target_icp_entity(company: str, domain: str, sector: str = "") -> tuple[b
 
 
 # ---------------------------------------------------------------------------
+# 1C. Deliverability Shield (Email/MX Hygiene) & Smoking-Gun Trigger Gate
+# ---------------------------------------------------------------------------
+
+def classify_recipient_mailbox(email_addr: str) -> str:
+    """Classify mailbox into 'receptionist_generic', 'functional_owner', or 'named_direct'."""
+    em = (email_addr or "").strip().lower()
+    if "@" not in em:
+        return "receptionist_generic"
+    local = em.split("@", 1)[0]
+    tokens = [t for t in re.split(r"[._+-]+", local) if t]
+    if local in FUNCTIONAL_OWNER_PREFIXES or any(t in FUNCTIONAL_OWNER_PREFIXES for t in tokens):
+        return "functional_owner"
+    if (
+        local in RECEPTIONIST_GENERIC_PREFIXES
+        or any(t in RECEPTIONIST_GENERIC_PREFIXES for t in tokens)
+        or local in ("paris", "london", "zurich", "geneva", "mir")
+    ):
+        return "receptionist_generic"
+    return "named_direct"
+
+
+def parse_mx_answer_record(raw_data: str) -> tuple[int | None, str]:
+    """Parse a DoH MX answer data string such as '10 aspmx.l.google.com.' or '0 .'."""
+    txt = str(raw_data or "").strip().strip('"')
+    parts = txt.split()
+    if len(parts) >= 2 and parts[0].isdigit():
+        prio = int(parts[0])
+        exch = parts[1].strip().rstrip(".").lower() if parts[1].strip() != "." else "."
+        return prio, exch
+    exch = txt.rstrip(".").lower() if txt != "." else "."
+    return None, exch
+
+
+def is_valid_mx_exchange(exchange: str, priority: int | None = None) -> tuple[bool, str]:
+    """Validate an MX exchange target, rejecting Null MX (0 .), placeholders, and parked/sinkhole hosts."""
+    ex = (exchange or "").strip().lower()
+    if not ex or ex == "." or (priority == 0 and ex in ("", ".")):
+        return False, "NULL_MX_REJECTED"
+    if "." not in ex or len(ex) < 4:
+        return False, f"INVALID_MX_HOST:{ex}"
+    for kw in PARKED_OR_SINKHOLE_MX_KEYWORDS:
+        if kw in ex:
+            return False, f"PARKED_OR_SINKHOLE_MX:{kw}"
+    return True, "OK"
+
+
+def query_mx_records_doh(domain: str, timeout: float = 5.0) -> list[tuple[int, str]]:
+    """Query public DNS MX records via Google DoH (`resolve.dns.google`) with Cloudflare fallback."""
+    dom = (domain or "").strip().lower().rstrip(".")
+    if not dom or "." not in dom:
+        return []
+    endpoints = [
+        ("https://resolve.dns.google/resolve", {"name": dom, "type": "MX"}),
+        ("https://cloudflare-dns.com/dns-query", {"name": dom, "type": "MX"}),
+    ]
+    headers = {
+        "Accept": "application/dns-json",
+        "User-Agent": "Sentinel-Compliance-Deliverability-Check/1.0",
+    }
+    for url, params in endpoints:
+        try:
+            r = requests.get(url, params=params, headers=headers, timeout=timeout)
+            if r.status_code != 200:
+                continue
+            data = r.json() or {}
+            status = data.get("Status", 0)
+            answers = data.get("Answer") or []
+            parsed: list[tuple[int, str]] = []
+            for ans in answers:
+                if ans.get("type") not in (None, 15):
+                    continue
+                prio, exch = parse_mx_answer_record(str(ans.get("data", "")))
+                parsed.append((0 if prio is None else prio, exch))
+            if parsed or status == 0:
+                return sorted(parsed, key=lambda x: x[0])
+        except Exception:
+            continue
+    return []
+
+
+def _shares_corporate_brand(em_dom: str, tgt_dom: str) -> bool:
+    """Return True if two distinct corporate domains share a clear company brand stem or prefix."""
+    a = em_dom.lower().strip(".")
+    b = tgt_dom.lower().strip(".")
+    if a == b or a.endswith("." + b) or b.endswith("." + a):
+        return True
+    a_head = a.split(".", 1)[0]
+    b_head = b.split(".", 1)[0]
+    generic = {
+        "labs", "lab", "clinic", "clinics", "health", "medical", "medtech",
+        "pharma", "bio", "biotech", "group", "global", "diag", "diagnostics",
+        "cabinet", "sante", "legal", "law", "cpa", "cpas", "advisors",
+    }
+    a_tokens = [p for p in re.split(r"[^a-z0-9]+", a_head) if len(p) >= 4 and p not in generic]
+    b_tokens = [p for p in re.split(r"[^a-z0-9]+", b_head) if len(p) >= 4 and p not in generic]
+    a_flat = re.sub(r"[^a-z0-9]", "", a_head)
+    b_flat = re.sub(r"[^a-z0-9]", "", b_head)
+    if any(tok in b_flat for tok in a_tokens) or any(tok in a_flat for tok in b_tokens):
+        return True
+    # Common brand prefix >= 5 chars
+    plen = 0
+    for c1, c2 in zip(a_flat, b_flat):
+        if c1 == c2:
+            plen += 1
+        else:
+            break
+    if plen >= 5:
+        return True
+    # Established acronym / short-stem sister pair (e.g. mscr.in <-> msclinical.com)
+    if len(a_flat) >= 2 and len(b_flat) >= 2:
+        shorter, longer = (a_flat, b_flat) if len(a_flat) <= len(b_flat) else (b_flat, a_flat)
+        if 3 <= len(shorter) <= 5 and shorter[:2] == longer[:2] and len(set(shorter) & set(longer)) >= 3:
+            return True
+    return False
+
+
+def verify_email_and_domain_hygiene(
+    email_addr: str,
+    target_domain: str = "",
+    check_mx: bool = True,
+    allow_verified_webmail: bool = False,
+) -> tuple[bool, str, dict[str, Any]]:
+    """
+    Zero-cost pre-send email & domain hygiene gate:
+      - Syntax validation & role blacklist (`noreply`, `mailer-daemon`, etc.)
+      - Disposable & parked domain rejection
+      - Free webmail rejection (`gmail.com`, `yahoo.com`, etc.) unless `allow_verified_webmail=True`
+      - Corporate domain-match verification against `target_domain` (exact or verified sister domain)
+      - Google DoH MX verification rejecting missing MX, RFC 7505 Null MX (`0 .`), and parked/sinkhole MXs
+    """
+    em = (email_addr or "").strip().lower()
+    mailbox_class = classify_recipient_mailbox(em)
+    meta: dict[str, Any] = {
+        "email": em,
+        "target_domain": (target_domain or "").strip().lower(),
+        "mailbox_class": mailbox_class,
+        "domain_match": "unknown",
+        "mx_hosts": [],
+    }
+    if not re.fullmatch(r"[a-z0-9._%+-]{1,64}@[a-z0-9.-]+\.[a-z]{2,15}", em) or ".." in em:
+        return False, f"INVALID_EMAIL_SYNTAX:{em}", meta
+
+    local, em_dom = em.split("@", 1)
+    if any(local == p or local.startswith(p + ".") or local.startswith(p + "-") for p in _SYSTEM_ROLE_BLACKLIST_PREFIXES):
+        return False, f"SYSTEM_NO_REPLY_MAILBOX:{local}", meta
+
+    if em_dom in DISPOSABLE_EMAIL_DOMAINS:
+        return False, f"BLOCKED_DISPOSABLE_DOMAIN:{em_dom}", meta
+
+    if any(tok in em_dom for tok in ("example.", "yourdomain", "domain.", "sedoparking", "hugedomains", "afternic", "parklogic")):
+        return False, f"BLOCKED_PARKED_DOMAIN:{em_dom}", meta
+
+    if em_dom in FREE_WEBMAIL_DOMAINS and not allow_verified_webmail:
+        return False, f"BLOCKED_FREE_WEBMAIL:{em_dom}", meta
+
+    tgt = (target_domain or "").strip().lower().removeprefix("www.")
+    if tgt:
+        if em_dom == tgt or em_dom.endswith("." + tgt):
+            meta["domain_match"] = "exact"
+        elif _shares_corporate_brand(em_dom, tgt):
+            meta["domain_match"] = "sister_domain"
+        else:
+            return False, f"OFF_DOMAIN_MISMATCH:{em_dom}!={tgt}", meta
+
+    if check_mx:
+        mx_list = query_mx_records_doh(em_dom)
+        if not mx_list:
+            return False, f"NO_MX_RECORDS:{em_dom}", meta
+        valid_hosts: list[str] = []
+        last_err = f"NO_VALID_MX:{em_dom}"
+        for prio, exch in mx_list:
+            ok_mx, mx_reason = is_valid_mx_exchange(exch, priority=prio)
+            if ok_mx:
+                valid_hosts.append(f"{prio} {exch}")
+            else:
+                last_err = mx_reason
+        if not valid_hosts:
+            return False, last_err, meta
+        meta["mx_hosts"] = valid_hosts
+
+    return True, "OK", meta
+
+
+def count_recent_24h_sent_breakdown(
+    ledger_csv: Path | None,
+    master_csv: Path | None = None,
+    hours: float = 24.0,
+    now_utc: dt.datetime | None = None,
+) -> dict[str, int]:
+    """
+    Count outbound sends over the rolling 24h window broken down into `primary` vs `followup`,
+    deduplicating shared events logged in both `sent_ledger.csv` and `outreach_master_status.csv`.
+    """
+    ref_now = now_utc or dt.datetime.now(dt.timezone.utc)
+    cutoff = ref_now - dt.timedelta(hours=hours)
+
+    def _parse_ts(raw: str) -> dt.datetime | None:
+        s = (raw or "").strip()
+        if not s:
+            return None
+        try:
+            d = dt.datetime.fromisoformat(s.replace("Z", "+00:00"))
+            if d.tzinfo is None:
+                d = d.replace(tzinfo=dt.timezone.utc)
+            return d.astimezone(dt.timezone.utc)
+        except Exception:
+            return None
+
+    followup_keys: set[tuple[str, str]] = set()
+    ledger_rows: list[dict[str, str]] = []
+    if ledger_csv and ledger_csv.is_file():
+        with open(ledger_csv, "r", encoding="utf-8", errors="ignore", newline="") as f:
+            for row in csv.DictReader(f):
+                ts = _parse_ts(row.get("timestamp_utc") or row.get("timestamp") or "")
+                if ts and ts >= cutoff:
+                    ledger_rows.append(row)
+
+    master_followups = 0
+    master_primaries = 0
+    master_ids: set[str] = set()
+    if master_csv and master_csv.is_file():
+        with open(master_csv, "r", encoding="utf-8", errors="ignore", newline="") as f:
+            for row in csv.DictReader(f):
+                ts = _parse_ts(row.get("Timestamp_UTC") or row.get("timestamp_utc") or "")
+                if not ts or ts < cutoff:
+                    continue
+                batch = (row.get("Wave") or row.get("batch") or "").strip()
+                dom = (row.get("Domain") or row.get("domain") or "").strip().lower()
+                em = (row.get("To_Email") or row.get("to_email") or "").strip().lower()
+                gid = (row.get("Gmail_ID") or row.get("gmail_message_id") or "").strip()
+                if gid:
+                    master_ids.add(gid)
+                if batch.startswith("FollowUp"):
+                    master_followups += 1
+                    if dom or em:
+                        followup_keys.add((dom, em))
+                else:
+                    master_primaries += 1
+
+    if ledger_rows:
+        fu_cnt = 0
+        prim_cnt = 0
+        for r in ledger_rows:
+            dom = (r.get("domain") or "").strip().lower()
+            em = (r.get("to_email") or r.get("email") or "").strip().lower()
+            note = (r.get("send_type") or r.get("batch") or "").strip().lower()
+            if "followup" in note or (dom, em) in followup_keys:
+                fu_cnt += 1
+            else:
+                prim_cnt += 1
+        fu_cnt = max(fu_cnt, master_followups)
+        total = max(len(ledger_rows), fu_cnt + prim_cnt)
+        return {"total": total, "primary": max(0, total - fu_cnt), "followup": fu_cnt}
+
+    return {"total": master_primaries + master_followups, "primary": master_primaries, "followup": master_followups}
+
+
+_GENERIC_MAUDE_PROBLEM_MARKERS = (
+    "adverse event without identified",
+    "no known device problem",
+    "device problem monitoring",
+    "appropriate term / code not available",
+    "unknown",
+    "insufficient information",
+)
+
+_REGULATED_HIGH_STAKES_SECTORS = {
+    "HealthTech", "healthtech", "Legal/IP", "law_ip", "MedTech OEM", "MedTech RA",
+    "Boutique RA", "medtech_cer", "Diagnostics", "diagnostics_lab", "Clinical Genomics",
+    "Biotech / CRO", "cro_reg", "CDMO / Pharma", "Veterinary Pharma",
+}
+
+
+def extract_audit_trigger_metrics(
+    track: str,
+    payload: dict[str, Any],
+    sector: str = "",
+) -> dict[str, Any]:
+    """Normalize track evidence JSON metrics deterministically across Tracks 1, 2, and 3."""
+    tk = (track or "sentinel_compliance").strip()
+    if tk == "pms_openfda_psur":
+        ms = payload.get("maude_summary") or {}
+        tot = int(ms.get("total_events_analyzed") or 0)
+        ev_c = ms.get("event_type_counts") or {}
+        probs = ms.get("top_device_problems") or []
+        top_prob = str(probs[0].get("problem", "")).strip() if probs else ""
+        recalls = payload.get("recalls_and_510k") or []
+        trials = payload.get("clinical_trials") or []
+        spikes = list(ms.get("signal_spikes") or [])
+        monthly = ms.get("monthly_trend") or []
+        if not spikes and len(monthly) > 3:
+            try:
+                pms_dir = Path(__file__).resolve().parent.parent / "pms-clinicaltrials-openfda-monitor"
+                if str(pms_dir) not in sys.path:
+                    sys.path.insert(0, str(pms_dir))
+                import pms_monitor
+                spikes = pms_monitor.compute_maude_signal_spikes(monthly, z_threshold=1.8)
+            except Exception:
+                spikes = []
+        max_z = max((float(s.get("z_score", 0.0) or 0.0) for s in spikes), default=0.0)
+        return {
+            "total_events": tot,
+            "malfunctions": int(ev_c.get("Malfunction", 0) or 0),
+            "injuries": int(ev_c.get("Injury", 0) or 0),
+            "deaths": int(ev_c.get("Death", 0) or 0),
+            "top_problem": top_prob,
+            "recalls_510k": len(recalls),
+            "clinical_trials": len(trials),
+            "spike_count": len(spikes),
+            "max_z_score": round(max_z, 2),
+        }
+
+    if tk == "clinical_lit_prisma":
+        pv = payload.get("prisma_verified") or {}
+        cs = payload.get("curate_stats") or {}
+        id_raw = int(pv.get("total_identified") or cs.get("identified_raw") or payload.get("identified_raw") or 0)
+        dups = int(pv.get("duplicates_removed") or cs.get("duplicates_removed") or 0)
+        exc = (
+            int(pv.get("excluded_at_screening", 0) or 0) + int(pv.get("excluded_at_full_text", 0) or 0)
+            or int(cs.get("excluded_missing_content", 0) or 0) + int(cs.get("excluded_prior_to_window", 0) or 0) + int(cs.get("excluded_beyond_cap", 0) or 0)
+        )
+        inc = int(pv.get("studies_included") or cs.get("included_final") or payload.get("included_final") or 0)
+        filtered = dups + exc
+        # Deterministic workload heuristic: 0.18h screening/abstract + 0.10h dedupe/exclusion logging + 0.35h Table 1 & Vancouver synthesis
+        est_hours_saved = round(max(1.5, id_raw * 0.18 + filtered * 0.10 + inc * 0.35), 1)
+        return {
+            "identified_raw": id_raw,
+            "duplicates_removed": dups,
+            "excluded_cnt": exc,
+            "filtered_out": filtered,
+            "included_final": inc,
+            "est_hours_saved": est_hours_saved,
+        }
+
+    # Track 1: Sentinel compliance
+    findings = {f.get("id", ""): f for f in (payload.get("findings") or []) if f.get("id")}
+    spf_diag = payload.get("spf_diagnostics") or {}
+    cmp_diag = payload.get("cmp_diagnostics") or {}
+    eml01 = findings.get("EML-01", {})
+    eml02 = findings.get("EML-02", {})
+    eml04 = findings.get("EML-04", {})
+    prv01 = findings.get("PRV-01", {})
+    prv02 = findings.get("PRV-02", {})
+    sec02 = findings.get("SEC-02", {})
+    sec09 = findings.get("SEC-09", {})
+
+    spf_lookups = spf_diag.get("total_lookups")
+    if spf_lookups is None:
+        m_spf = re.search(r"(\d+)\s*/\s*10\s*DNS\s*lookups|triggers\s*(\d+)\s*DNS\s*lookups", str(eml02.get("evidence", "")), re.I)
+        if m_spf:
+            spf_lookups = int(m_spf.group(1) or m_spf.group(2))
+
+    return {
+        "overall_score": int(payload.get("overall_score", 0) or 0),
+        "fail_count": int(payload.get("fail_count") if payload.get("fail_count") is not None else sum(1 for f in findings.values() if f.get("status") == "FAIL")),
+        "warn_count": int(payload.get("warn_count") if payload.get("warn_count") is not None else sum(1 for f in findings.values() if f.get("status") == "WARN")),
+        "pass_count": int(payload.get("pass_count") if payload.get("pass_count") is not None else sum(1 for f in findings.values() if f.get("status") == "PASS")),
+        "spf_status": eml02.get("status", ""),
+        "spf_lookups": spf_lookups,
+        "spf_exceeds": bool(spf_diag.get("exceeds_limit")) or ("exceeding 10" in str(eml02.get("title", "") + " " + eml02.get("evidence", "")).lower()),
+        "dmarc_status": eml01.get("status", ""),
+        "dmarc_p_none": "p=none" in str(eml01.get("evidence", "")).lower() or eml01.get("status") == "WARN",
+        "caa_missing": eml04.get("status") != "PASS",
+        "hsts_missing": sec02.get("status") == "FAIL",
+        "fonts_leak": prv01.get("status") == "FAIL",
+        "tracker_leak": prv02.get("status") in ("WARN", "FAIL"),
+        "cmp_has_reject": bool(cmp_diag.get("has_reject_copy_in_html", False)),
+        "security_txt_missing": sec09.get("status") != "PASS",
+        "sector": sector,
+    }
+
+
+def evaluate_smoking_gun_trigger(
+    track: str,
+    payload: dict[str, Any],
+    sector: str = "",
+) -> tuple[bool, str, dict[str, Any]]:
+    """
+    High-Severity Trigger ('Smoking Gun') Lead Gate across Tracks 1, 2, and 3.
+    Rejects mild/low-urgency targets and accepts only verifiable, high-urgency pain signals.
+    """
+    tk = (track or "sentinel_compliance").strip()
+    m = extract_audit_trigger_metrics(tk, payload, sector=sector)
+
+    if tk == "pms_openfda_psur":
+        prob_low = (m["top_problem"] or "").lower()
+        concrete_problem = bool(prob_low) and not any(g in prob_low for g in _GENERIC_MAUDE_PROBLEM_MARKERS)
+        if m["total_events"] >= 20 and concrete_problem:
+            return True, f"MAUDE_{m['total_events']}_EVENTS_CONCRETE_PROBLEM", m
+        if m["max_z_score"] >= 1.8 and m["spike_count"] >= 1:
+            return True, f"MAUDE_TREND_SPIKE_Z{m['max_z_score']}", m
+        if m["clinical_trials"] >= 2 and (m["total_events"] >= 10 or m["recalls_510k"] >= 1):
+            return True, f"ACTIVE_TRIALS_{m['clinical_trials']}_PLUS_FDA_SIGNALS", m
+        return False, f"PMS_LOW_SIGNAL_NO_TRIGGER:{m['total_events']}", m
+
+    if tk == "clinical_lit_prisma":
+        if m["identified_raw"] >= 12 and m["included_final"] >= 5 and m["filtered_out"] >= 2:
+            return True, f"PRISMA_{m['identified_raw']}TO{m['included_final']}_SAVES_{m['est_hours_saved']}H", m
+        return False, f"LIT_LOW_SIGNAL_NO_TRIGGER:{m['identified_raw']}/{m['included_final']}/filt={m['filtered_out']}", m
+
+    # Track 1: Sentinel compliance
+    if m["overall_score"] > 75:
+        return False, f"MILD_SCORE_{m['overall_score']}", m
+
+    triggers: list[str] = []
+    if (
+        m["spf_status"] == "FAIL"
+        or m["spf_exceeds"]
+        or (m["spf_lookups"] is not None and int(m["spf_lookups"]) >= 9)
+        or (m["spf_status"] == "WARN")
+    ):
+        triggers.append("SPF_PERMERROR_OR_BROKEN")
+    if m["dmarc_status"] == "FAIL" or (m["dmarc_p_none"] and (m["caa_missing"] or m["hsts_missing"])):
+        triggers.append("DMARC_UNENFORCED_WITH_CAA_OR_HSTS_GAP")
+    if m["fonts_leak"] or (m["tracker_leak"] and not m["cmp_has_reject"]):
+        triggers.append("PRECONSENT_LEAK_NO_REJECT_SYMMETRY")
+    if m["security_txt_missing"] and m["fail_count"] >= 1 and (sector or "").strip() in _REGULATED_HIGH_STAKES_SECTORS:
+        triggers.append("REGULATED_MISSING_SECURITY_TXT_PLUS_FAILS")
+
+    if not triggers:
+        return False, f"NO_SMOKING_GUN_HEADERS_ONLY:{m['overall_score']}", m
+    m["triggers"] = triggers
+    return True, triggers[0], m
+
+
+# ---------------------------------------------------------------------------
 # 2. Four Local Stylometric Detectors (+ Optional External APIs)
 # ---------------------------------------------------------------------------
 
@@ -428,7 +898,7 @@ def evaluate_4_detectors(text: str) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# 3. Strict 120–150 Word Professionalism Gate & Single-Pass Humanizer
+# 3. Strict 85–125 Word Professionalism Gate & Single-Pass Humanizer
 # ---------------------------------------------------------------------------
 
 def count_words(text: str) -> int:
@@ -440,11 +910,11 @@ def verify_professionalism(
     body: str,
     to_email: str,
     required_domain: str | None = None,
-    min_words: int = 120,
-    max_words: int = 150,
+    min_words: int = 85,
+    max_words: int = 125,
     require_price: bool = True,
 ) -> tuple[bool, list[str]]:
-    """Enforce strict 120–150 word count, real B2B pricing, zero 'for free', domain alignment, and opt-out."""
+    """Enforce strict 85–125 word count, real B2B pricing, zero 'for free' or '-bot' URLs, domain alignment, and opt-out."""
     issues: list[str] = []
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", to_email.strip()):
         issues.append(f"Invalid recipient email: '{to_email}'")
@@ -481,29 +951,30 @@ def verify_professionalism(
 
 
 def apply_humanizer_pass(text: str, iteration: int = 1, detector_flags: list[str] | None = None) -> str:
-    """Single-pass high-impact humanizer removing only the stiffest AI phrases while keeping human warmth."""
+    """Single-pass high-impact humanizer removing stiff AI phrases while keeping a single routing em-dash."""
     out = text
     for pat, repl in HIGH_IMPACT_HUMANIZER_REPLACEMENTS:
         out = re.sub(pat, repl, out)
 
-    out = out.replace(" — ", ", ").replace("—", ", ")
+    # Preserve up to one crisp routing em-dash (e.g., 'Hello — could you...'), strip excess em-dash chains
+    if out.count("—") > 1:
+        out = out.replace(" — ", ", ").replace("—", ", ")
     out = re.sub(r"[ \t]{2,}", " ", out)
     out = re.sub(r"\n{3,}", "\n\n", out)
     return out.strip()
 
 
-def calibrate_word_count(body: str, lang: str = "en", min_words: int = 120, max_words: int = 150) -> str:
+def calibrate_word_count(body: str, lang: str = "en", min_words: int = 85, max_words: int = 125) -> str:
     """
     Fine-tune word count after single-pass humanization so the final email lands strictly
-    inside [min_words, max_words] (120–150 words) without cutting sentences abruptly.
+    inside [min_words, max_words] (85–125 words) without cutting sentences abruptly.
     """
     wc = count_words(body)
     if min_words <= wc <= max_words:
         return body
 
-    # If slightly under 120 words, insert a natural methodology/deliverable detail before the closing opt-out
+    # If slightly under min_words, insert a natural methodology/deliverable detail before the closing opt-out
     if wc < min_words:
-        needed = min_words - wc
         if lang == "de":
             addons = [
                 (8, "Alle Prüfungen erfolgten rein passiv über öffentliche DNS- und HTTPS-Header."),
@@ -535,13 +1006,15 @@ def calibrate_word_count(body: str, lang: str = "en", min_words: int = 120, max_
         else:
             body = body + " " + best_addon
 
-    # If slightly over 150 words, tighten non-essential modifiers first while keeping preview refs and question
+    # If over max_words, tighten non-essential modifiers first while preserving metrics and routing
     wc = count_words(body)
     if wc > max_words:
         trim_map = [
             (" and includes a post-deployment verification re-scan once your team applies the changes", ""),
             (" and includes a post-deployment verification re-scan", ""),
             (" with zero intrusive traffic", ""),
+            (" using my passive 25-control Sentinel evaluation system", " across 25 passive checks"),
+            (" (scorecard and evaluation system PDF attached)", " (scorecard & guide attached)"),
             (" (1-page risk preview and methodology guide attached)", " (1-page preview & guide attached)"),
             (" (scorecard preview and guide attached)", " (preview & guide attached)"),
             (" (1-Seiten-Risikovorschau und System-Leitfaden im Anhang)", " (Risikovorschau & Leitfaden im Anhang)"),
@@ -555,6 +1028,9 @@ def calibrate_word_count(body: str, lang: str = "en", min_words: int = 120, max_
             ("the full Word executive audit, 4-sheet Excel risk register, ", "the Word/Excel audit dossier, "),
             ("the Word executive audit, 4-sheet Excel risk register, ", "the Word/Excel audit dossier, "),
             ("the full Word and 4-sheet Excel audit dossier, ", "the Word/Excel audit dossier, "),
+            ("the full Word/Excel audit plus ready-to-paste DNS and server headers", "the Word/Excel dossier and turnkey DNS/server headers"),
+            ("we use our automated IT fix files to simplify this and deliver ", "I deliver "),
+            ("for a flat fee of ", "for "),
             ("das vollständige Word- und 4-Blatt-Excel-Auditpaket, ", "das Word/Excel-Auditpaket, "),
             ("das vollständige Word- und Excel-Auditpaket, ", "das Word/Excel-Auditpaket, "),
             ("le rapport Word, le classeur Excel 4 onglets, ", "le dossier Word/Excel 4 onglets, "),
@@ -569,12 +1045,14 @@ def calibrate_word_count(body: str, lang: str = "en", min_words: int = 120, max_
             (", plus a post-deployment verification scan", ""),
             (" sowie den Kontroll-Scan nach der Umsetzung", ""),
             (", ainsi que la contre-visite de validation", ""),
-            ("Specifically, the scan flagged that ", "The scan found: "),
+            ("Specifically, the scan flagged that ", "Scan findings: "),
             ("Konkret fielen diese Punkte auf: ", "Befunde: "),
             ("L'analyse relève notamment : ", "Constats : "),
             ("If this is not a priority right now, simply reply 'no' and I will not follow up.", "If not relevant, reply 'no' and I won't follow up."),
             ("Si ce n'est pas pertinent, un simple « non » suffit et je ne relancerai pas.", "Un simple « non » suffit si ce n'est pas pertinent."),
             ("Falls kein Bedarf besteht, genügt ein kurzes «Nein», dann schreibe ich nicht erneut.", "Bei Nichtinteresse genügt ein kurzes «Nein», ohne Nachfassen."),
+            ("consistently ", ""),
+            ("evaluated ", "checked "),
             ("against outbound email spoofing", "against spoofing"),
             ("before visitor consent", "before consent"),
             (" (monitoring only)", ""),
@@ -609,13 +1087,13 @@ def run_qa_humanizer_loop(
     threshold_pct: float = 15.0,
     max_passes: int = 1,
     lang: str = "en",
-    min_words: int = 120,
-    max_words: int = 150,
+    min_words: int = 85,
+    max_words: int = 125,
     require_price: bool = True,
 ) -> dict[str, Any]:
     """
     Run a single high-impact humanizer pass (`max_passes=1` default), calibrate word count
-    to 120–150 words, and verify professionalism + detector score.
+    to 85–125 words, and verify professionalism + detector score.
     """
     current_body = apply_humanizer_pass(body.strip(), iteration=1)
     current_body = calibrate_word_count(current_body, lang=lang, min_words=min_words, max_words=max_words)
@@ -655,8 +1133,63 @@ def run_qa_humanizer_loop(
     }
 
 
+def load_custom_domain_display() -> str:
+    """
+    Return the user's configured custom domain (without scheme) for outreach/briefing copy,
+    or empty string when only the default `-bot.github.io` host is active.
+    """
+    cfg_path = Path(__file__).resolve().parent / "client_ops_config.json"
+    if not cfg_path.is_file():
+        return ""
+    try:
+        cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+        prov = cfg.get("provider", {})
+        dom = (prov.get("custom_domain") or "").strip().rstrip("/")
+        if not dom:
+            w = (prov.get("website_url") or "").strip()
+            if w and "kaledbouchagraoui7-bot" not in w.lower():
+                dom = re.sub(r"^https?://", "", w).rstrip("/")
+        if dom and "kaledbouchagraoui7-bot" not in dom.lower():
+            return dom
+    except Exception:
+        pass
+    return ""
+
+
+def receptionist_routing_line(
+    to_email: str,
+    company_name: str = "",
+    lang: str = "en",
+    sector: str = "",
+) -> str:
+    """
+    Return a crisp 1-line receptionist-routing ask when sending to generic inboxes
+    (`info@`, `contact@`, `accueil@`, `hello@`, etc.), or '' for functional/named owners.
+    """
+    if classify_recipient_mailbox(to_email) != "receptionist_generic":
+        return ""
+    lg = (lang or "en").strip().lower()
+    comp = (company_name or "").strip()
+    at_comp_fr = f" chez {comp}" if comp else ""
+    at_comp_en = f" at {comp}" if comp else ""
+    at_comp_de = f" bei {comp}" if comp else ""
+    is_life_sci = any(
+        k in (sector or "").lower()
+        for k in ("medtech", "biotech", "cro", "diag", "pharma", "genom", "health", "dermo", "nutra", "vet", "ra")
+    )
+
+    if lg == "fr":
+        role = "responsable Qualité/Réglementaire ou DPO" if is_life_sci else "responsable conformité, juridique ou DPO"
+        return f"Bonjour — pourriez-vous transmettre ces éléments à votre {role}{at_comp_fr} ?"
+    if lg == "de":
+        role = "die Leitung Qualität/Regulatory oder Datenschutz" if is_life_sci else "die Leitung Compliance, Recht oder Datenschutz"
+        return f"Guten Tag — könnten Sie diese Übersicht bitte an {role}{at_comp_de} weiterleiten?"
+    role = "regulatory affairs, QA, or IT security" if is_life_sci else "compliance, legal, or IT security"
+    return f"Hello — could you forward this brief to whoever oversees {role}{at_comp_en}?"
+
+
 # ---------------------------------------------------------------------------
-# 4. Tailored 120–150 Word Briefing Builder (Personal Site + Review Context + Real Price)
+# 4. Tailored 85–125 Word Briefing Builder (Specific Findings + Routing + Price)
 # ---------------------------------------------------------------------------
 
 def default_price_for_country(country: str, sector: str = "") -> str:
@@ -698,57 +1231,71 @@ def summarize_technical_gaps(audit: dict[str, Any], lang: str = "en") -> list[st
     domain = audit["domain"]
     fails = {f["id"]: f for f in audit["findings"] if f["status"] == "FAIL"}
     warns = {f["id"]: f for f in audit["findings"] if f["status"] == "WARN"}
+    m = extract_audit_trigger_metrics("sentinel_compliance", audit)
+    spf_n = m.get("spf_lookups")
 
     points: list[str] = []
     if lang == "de":
         if "EML-01" in fails:
-            points.append(f"kein aktiver _dmarc.{domain} DNS-Schutz gegen E-Mail-Spoofing")
+            points.append(f"kein aktiver _dmarc.{domain} DNS-Schutz")
         elif "EML-01" in warns:
-            points.append(f"_dmarc.{domain} steht nur auf p=none ohne Spoofing-Blockade")
+            points.append(f"_dmarc.{domain} nur auf p=none")
+        if "EML-02" in fails:
+            points.append(f"SPF fehlerhaft oder >10 Lookups ({spf_n}/10)" if spf_n else "fehlendes/permissives SPF")
+        elif spf_n is not None and int(spf_n) >= 9:
+            points.append(f"SPF-Limit fast erreicht ({spf_n}/10 Lookups)")
         if "PRV-01" in fails:
-            points.append("externe Google Fonts übertragen Besucher-IPs vor Einwilligung")
+            points.append("externe Google Fonts vor Einwilligung")
+        elif "PRV-02" in warns or "PRV-02" in fails:
+            points.append("Tracker-Skripte vor Einwilligung ohne Ablehnen-Button")
         elif "PRV-03" in fails:
-            points.append("Cookies nutzen noch nicht durchgängig Secure/HttpOnly/SameSite")
+            points.append("Cookies ohne Secure/HttpOnly/SameSite")
         if "SEC-02" in fails or "SEC-03" in fails:
-            points.append("fehlende HTTP-Schutzheader (HSTS, CSP und X-Frame-Options)")
-        if "ACC-02" in fails or "ACC-03" in fails or "A11Y-02" in fails or "A11Y-03" in fails:
-            points.append("fehlende WCAG 2.1 AA Formular- oder Bild-Attribute")
+            points.append("fehlende HSTS/CSP-Header")
         if not points:
-            points.append("optimierbare HTTP-Security-Header und DNS-CAA-Richtlinien")
+            points.append("fehlende HTTP-Security-Header und DNS-CAA")
         return points[:3]
 
     if lang == "fr":
         if "EML-01" in fails:
-            points.append(f"aucun enregistrement DNS _dmarc.{domain} actif contre l'usurpation mail")
+            points.append(f"aucun DNS _dmarc.{domain} actif")
         elif "EML-01" in warns:
-            points.append(f"la règle _dmarc.{domain} reste en mode p=none sans blocage")
+            points.append(f"_dmarc.{domain} en p=none sans blocage")
+        if "EML-02" in fails:
+            points.append(f"SPF >10 requêtes DNS ({spf_n}/10)" if spf_n else "SPF absent ou permissif")
+        elif spf_n is not None and int(spf_n) >= 9:
+            points.append(f"SPF proche du plafond ({spf_n}/10 requêtes DNS)")
         if "PRV-01" in fails:
-            points.append("les polices Google Fonts distantes exposent l'IP des visiteurs avant consentement")
+            points.append("Google Fonts distants avant consentement")
+        elif "PRV-02" in warns or "PRV-02" in fails:
+            points.append("traceurs chargés avant consentement sans refus 1-clic")
         elif "PRV-03" in fails:
-            points.append("certains cookies initiaux omettent les attributs Secure/HttpOnly/SameSite")
+            points.append("cookies sans Secure/HttpOnly/SameSite")
         if "SEC-02" in fails or "SEC-03" in fails:
-            points.append("les en-têtes HSTS, Content-Security-Policy et X-Frame-Options manquent")
+            points.append("en-têtes HSTS et CSP absents")
         if not points:
-            points.append("plusieurs en-têtes HTTP et restrictions DNS CAA sont absents")
+            points.append("en-têtes HTTP et restriction DNS CAA absents")
         return points[:3]
 
     # English
     if "EML-01" in fails:
-        points.append(f"no _dmarc.{domain} DNS policy is published against outbound email spoofing")
+        points.append(f"missing _dmarc.{domain} enforcement")
     elif "EML-01" in warns:
-        points.append(f"_dmarc.{domain} is still on p=none (monitoring only)")
+        points.append(f"_dmarc.{domain} stuck at p=none")
+    if "EML-02" in fails:
+        points.append(f"SPF exceeding 10-lookup limit ({spf_n}/10)" if spf_n else "missing/permissive SPF record")
+    elif spf_n is not None and int(spf_n) >= 9:
+        points.append(f"SPF lookup budget near limit ({spf_n}/10 lookups)")
     if "PRV-01" in fails:
-        points.append("remote Google Fonts calls expose visitor IPs before consent")
-    elif "PRV-03" in fails:
-        points.append("initial session cookies lack full Secure/HttpOnly/SameSite flags")
+        points.append("remote Google Fonts IP leak before consent")
     elif "PRV-02" in warns or "PRV-02" in fails:
-        points.append("third-party analytics scripts load before visitor consent")
+        points.append("pre-consent analytics scripts without Reject symmetry")
+    elif "PRV-03" in fails:
+        points.append("cookies missing Secure/HttpOnly/SameSite flags")
     if "SEC-02" in fails or "SEC-03" in fails:
-        points.append("key browser security headers (HSTS, CSP, X-Frame-Options) are missing")
-    if "ACC-03" in fails or "ACC-02" in fails or "A11Y-02" in fails or "A11Y-03" in fails:
-        points.append("intake form fields or images have WCAG 2.1 AA labeling gaps")
+        points.append("missing HSTS and CSP headers")
     if not points:
-        points.append("several HTTP security headers and DNS CAA restrictions are unconfigured")
+        points.append("missing HTTP security headers and DNS CAA")
     return points[:3]
 
 
@@ -764,87 +1311,79 @@ def build_evidence_email(
     price_str: str = "",
 ) -> tuple[str, str]:
     """
-    Generate a personalized 120–150 word email combining:
-      1. Specific site / customer-review context (`review_context`)
-      2. Exact technical findings from `audit` + attached evaluation system PDF & scorecard PNG
-      3. Concrete operational problem solved (`problem_solved`)
-      4. Clear fixed price (`price_str`) — never "for free"
+    Generate a personalized 85–125 word email combining:
+      1. Automatic 1-line receptionist routing ask for generic mailboxes (`info@`, `contact@`, etc.)
+      2. Immediate Sentence-1 numerical scan findings (`score/100`, fail count, SPF/DMARC/font metrics)
+      3. Concrete operational problem solved (`problem_solved`) + attached PNG scorecard & guide PDF
+      4. Clear fixed price (`price_str`), no `-bot` URLs unless custom domain set, and polite opt-out
     """
     domain = audit["domain"]
-    score = audit["overall_score"]
+    score = int(audit["overall_score"])
+    m = extract_audit_trigger_metrics("sentinel_compliance", audit, sector=sector)
+    fail_cnt = m["fail_count"]
+    total_chk = int(audit.get("total_checks") or len(audit.get("findings") or []) or 25)
     price = price_str.strip() or default_price_for_country(country, sector)
     tech_points = summarize_technical_gaps(audit, lang=lang)
-    tech_joined = "; ".join(tech_points)
+    tech_joined = "; ".join(tech_points[:2])
+    route_line = receptionist_routing_line(to_email, company_name=company_name, lang=lang, sector=sector)
+    custom_dom = load_custom_domain_display()
 
     if lang == "de":
-        rev_line = review_context.strip() or (
-            f"Beim Blick auf {domain} und Ihr Mandanten-Feedback fällt auf, wie sehr {company_name} "
-            f"auf verlässliche digitale Mandantenkommunikation und schnelle Rückmeldungen setzt."
-        )
+        opening = route_line or f"Guten Tag {company_name}-Team,"
         prob_line = problem_solved.strip() or (
-            "Diese Korrekturen verhindern, dass Mandanten-E-Mails im Spam landen, und sichern Ihre "
-            "Online-Formulare direkt nach DSGVO/revDSG ab."
+            "Diese Korrekturen stoppen E-Mail-Spoofing sowie unnötige DSGVO-/revDSG-Treffer."
         )
-        subj = f"1-Seiten-Risikovorschau & Audit für {domain} ({score}/100)"
+        site_line = f"\nReferenzen & AGB: https://{custom_dom}\n" if custom_dom else "\n"
+        subj = f"1-Seiten-Risikovorschau für {domain} ({score}/100)"
         body = (
-            f"Guten Tag liebes {company_name} Team,\n\n"
-            f"{rev_line} Ich habe für {domain} eine 1-Seiten-Risikovorschau nach dem 25-Kontrollen-Modell "
-            f"(1-Seiten-Risikovorschau und System-Leitfaden im Anhang) erstellt, wobei Ihre Seite aktuell "
-            f"{score}/100 Punkte erreicht.\n\n"
-            f"Konkret fielen diese Punkte auf: {tech_joined}. {prob_line}\n\n"
-            f"Für ein fixes Honorar von {price} liefere ich das vollständige Word- und 4-Blatt-Excel-Auditpaket, "
-            f"fertige IT-Korrekturdateien für {domain} sowie den Kontroll-Scan nach der Umsetzung. "
-            f"Soll ich Ihnen den Projektvorschlag zusenden?\n\n"
-            f"Falls kein Bedarf besteht, genügt ein kurzes «Nein», dann schreibe ich nicht erneut.\n\n"
-            f"Freundliche Grüsse\nKaled Bouchagraoui"
+            f"{opening}\n\n"
+            f"Ein passiver 25-Kontrollen-Scan von {domain} ergab {score}/100 Punkte ({fail_cnt} Fehler): "
+            f"{tech_joined}. {prob_line}\n\n"
+            f"Anbei die 1-Seiten-Risikovorschau (PNG) und der System-Leitfaden (PDF). Für {price} pauschal "
+            f"liefere ich Word-Bericht, Excel-Register, IT-Korrekturdateien und Kontroll-Scan.{site_line}"
+            f"Soll ich den Projektumfang senden?\n\n"
+            f"Falls kein Bedarf besteht, genügt ein kurzes «Nein».\n\n"
+            f"Freundliche Grüsse,\nKaled Bouchagraoui"
         )
-        return subj, calibrate_word_count(body, lang="de")
+        return subj, calibrate_word_count(body, lang="de", min_words=85, max_words=125)
 
     if lang == "fr":
-        rev_line = review_context.strip() or (
-            f"En consultant {domain} et les avis clients de {company_name}, on voit combien la réactivité "
-            f"et la confidentialité des échanges comptent pour vos clients."
-        )
+        opening = route_line or f"Bonjour l'équipe {company_name},"
         prob_line = problem_solved.strip() or (
-            "Corriger ces points évite que vos courriels soient bloqués en spam et sécurise vos "
-            "formulaires en ligne conformément au RGPD."
+            "Corriger ces points protège vos courriels contre le spam et ferme ces écarts RGPD avant tout audit."
         )
-        subj = f"Aperçu risques & conformité 1 page pour {domain} ({score}/100)"
+        site_line = f"\nExemples & CGV : https://{custom_dom}\n" if custom_dom else "\n"
+        subj = f"Aperçu risques {domain} ({score}/100, {fail_cnt} écarts)"
         body = (
-            f"Bonjour l'équipe {company_name},\n\n"
-            f"{rev_line} J'ai préparé un aperçu 1 page des risques pour {domain} sur 25 contrôles "
-            f"(aperçu visuel et guide joints), où votre site obtient {score}/100.\n\n"
-            f"L'analyse relève notamment : {tech_joined}. {prob_line}\n\n"
-            f"Pour un forfait fixe de {price}, je fournis le rapport Word, l'Excel 4 onglets, les "
-            f"correctifs IT prêts à appliquer pour {domain}, et l'attestation re-vérifiée. "
-            f"Puis-je envoyer le périmètre détaillé ?\n\n"
-            f"Si ce n'est pas pertinent, un simple « non » suffit et je ne relancerai pas.\n\n"
+            f"{opening}\n\n"
+            f"Un relevé passif sur {total_chk} contrôles place {domain} à {score}/100 ({fail_cnt} échecs) : "
+            f"{tech_joined}. {prob_line}\n\n"
+            f"La fiche 1 page (PNG) et la méthode (PDF) sont jointes. Pour {price} fixe, je livre le dossier "
+            f"Word/Excel, les correctifs IT prêts à poser pour {domain} et l'attestation re-vérifiée.{site_line}"
+            f"Puis-je envoyer le périmètre ?\n\n"
+            f"Si ce n'est pas pertinent, un simple « non » suffit.\n\n"
             f"Cordialement,\nKaled Bouchagraoui"
         )
-        return subj, calibrate_word_count(body, lang="fr")
+        return subj, calibrate_word_count(body, lang="fr", min_words=85, max_words=125)
 
     # English
-    rev_line = review_context.strip() or (
-        f"While reviewing {domain} and client feedback for {company_name}, it stood out how much your "
-        f"reputation relies on responsive communication and trusted digital onboarding."
-    )
+    opening = route_line or f"Hello {company_name} team,"
     prob_line = problem_solved.strip() or (
-        "Fixing these gaps stops strict corporate spam filters from flagging your outbound emails and "
-        "protects visitors submitting enquiries through your site."
+        "Closing these prevents outbound spam-folder filtering and removes avoidable GDPR/vendor-audit flags."
     )
-    subj = f"1-page GDPR & domain risk preview for {domain} ({score}/100)"
+    site_line = f"\nPortfolio & terms: https://{custom_dom}\n" if custom_dom else "\n"
+    subj = f"{domain} compliance scan: {score}/100 ({fail_cnt} failed checks)"
     body = (
-        f"Hello {company_name} team,\n\n"
-        f"{rev_line} I prepared a 1-page risk preview for {domain} across 25 checks "
-        f"(scorecard preview and guide attached), where your site scored {score}/100.\n\n"
-        f"Specifically, the scan flagged that {tech_joined}. {prob_line}\n\n"
-        f"For {price} flat, I deliver the Word executive audit, 4-sheet Excel risk register, "
-        f"turnkey IT fix files for {domain}, and a re-verified attestation PDF. "
-        f"Should I send over the scope to get started?\n\n"
-        f"If this is not a priority right now, simply reply 'no' and I will not follow up.\n\n"
+        f"{opening}\n\n"
+        f"A passive {total_chk}-control scan on {domain} scored {score}/100 ({fail_cnt} failed checks): "
+        f"{tech_joined}. {prob_line}\n\n"
+        f"Your 1-page visual scorecard (PNG) and evaluation guide (PDF) are attached. For {price} flat, "
+        f"I deliver the Word audit, 4-sheet Excel risk register, turnkey IT fix files, and verification "
+        f"re-scan.{site_line}Should I send over the scope?\n\n"
+        f"If this is not a priority right now, reply 'no' and I won't follow up.\n\n"
         f"Best regards,\nKaled Bouchagraoui"
     )
-    return subj, calibrate_word_count(body, lang="en")
+    return subj, calibrate_word_count(body, lang="en", min_words=85, max_words=125)
 
 
 # ---------------------------------------------------------------------------
@@ -976,6 +1515,22 @@ def load_suppression_records(
     return sup_domains, sup_emails
 
 
+def is_email_suppressed(
+    email_addr: str,
+    domain: str,
+    sup_domains: dict[str, str],
+    sup_emails: dict[str, str],
+) -> tuple[bool, str]:
+    """Return `(is_suppressed, reason)` matching either exact email or suppressed corporate domain."""
+    em = (email_addr or "").strip().lower()
+    dom = (domain or "").strip().lower()
+    if em and em in sup_emails:
+        return True, sup_emails[em]
+    if dom and dom in sup_domains:
+        return True, sup_domains[dom]
+    return False, ""
+
+
 def process_dispatch_queue(
     manifest_csv: Path,
     out_dir: Path,
@@ -986,8 +1541,9 @@ def process_dispatch_queue(
     max_send_per_run: int = 40,
     confirm_send: bool = False,
     suppression_csv: Path | None = None,
+    check_mx: bool = False,
 ) -> dict[str, Any]:
-    """Run single-pass humanizer + strict 120–150w QA gate on every lead in `manifest_csv`."""
+    """Run deliverability hygiene check, single-pass humanizer, and strict 85–125w QA gate on `manifest_csv`."""
     out_dir.mkdir(parents=True, exist_ok=True)
     drafts_dir = out_dir / "outlook_drafts_eml"
     drafts_dir.mkdir(parents=True, exist_ok=True)
@@ -1050,6 +1606,32 @@ def process_dispatch_queue(
             })
             continue
 
+        hyg_ok, hyg_reason, _hyg_meta = verify_email_and_domain_hygiene(
+            to_email,
+            target_domain=domain,
+            check_mx=check_mx,
+            allow_verified_webmail=False,
+        )
+        if not hyg_ok:
+            qa_results.append({
+                "domain": domain,
+                "to_email": to_email,
+                "lang": lang,
+                "status": "BLOCKED_HYGIENE",
+                "word_count": 0,
+                "avg_ai_pct": 0.0,
+                "d1_cliche": 0.0,
+                "d2_burstiness": 0.0,
+                "d3_syntactic": 0.0,
+                "d4_boilerplate": 0.0,
+                "passes_used": 0,
+                "professionalism_ok": False,
+                "professionalism_issues": f"Hygiene reject: {hyg_reason}",
+                "eml_draft": "",
+                "attachments": "",
+            })
+            continue
+
         attachments: list[Path] = []
         if row.get("attachment_path", "").strip():
             for part in row["attachment_path"].split(";"):
@@ -1082,8 +1664,8 @@ def process_dispatch_queue(
             threshold_pct=threshold_pct,
             max_passes=1,
             lang=lang,
-            min_words=120,
-            max_words=150,
+            min_words=85,
+            max_words=125,
             require_price=True,
         )
 
@@ -1222,7 +1804,7 @@ def process_dispatch_queue(
 def main(argv: list[str] | None = None) -> int:
     load_dotenv_files()
     parser = argparse.ArgumentParser(
-        description="Personalized 120–150 Word B2B Email Generator, Single-Pass Humanizer & Dispatcher."
+        description="Personalized 85–125 Word B2B Email Generator, Single-Pass Humanizer & Dispatcher."
     )
     parser.add_argument("--manifest", required=True, help="CSV manifest")
     parser.add_argument("--output-dir", default="outreach_queue", help="Output folder for .eml drafts & QA CSV report")
@@ -1233,6 +1815,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-send", type=int, default=40, help="Safety cap per SMTP run (default: 40)")
     parser.add_argument("--confirm-send", action="store_true", help="Required confirmation flag when --dispatch smtp is active")
     parser.add_argument("--suppression-csv", default="", help="Optional optout_suppression.csv path (defaults to <output-dir>/optout_suppression.csv if present)")
+    parser.add_argument("--check-mx", action="store_true", help="Verify live MX records via DNS-over-HTTPS (default enabled automatically for --dispatch smtp)")
+    parser.add_argument("--skip-mx", action="store_true", help="Skip live DNS MX lookups during SMTP dispatch")
     args = parser.parse_args(argv)
 
     summary = process_dispatch_queue(
@@ -1245,6 +1829,7 @@ def main(argv: list[str] | None = None) -> int:
         max_send_per_run=args.max_send,
         confirm_send=args.confirm_send,
         suppression_csv=Path(args.suppression_csv) if args.suppression_csv else None,
+        check_mx=(not args.skip_mx) and (args.check_mx or args.dispatch == "smtp"),
     )
     print(json.dumps({k: v for k, v in summary.items() if k != "results"}, indent=2, default=str))
     for r in summary["results"]:

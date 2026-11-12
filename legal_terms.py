@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import html
 import json
+import re
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,6 +33,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "jurisdiction_city": "Strasbourg, France",
         "governing_law": "Laws of France",
         "vat_notice": "TVA non applicable, art. 293 B du CGI",
+        "custom_domain": "",
         "website_url": "https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/",
         "contact_email": "kaledbouchagraoui7@gmail.com",
         "terms_url": "https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/terms.html",
@@ -82,6 +84,41 @@ def load_provider_config(config_path: str | Path | None = None) -> dict[str, Any
                 cfg["payment"]["bank_transfer"].update(loaded["payment"]["bank_transfer"])
         except Exception:
             pass
+    return cfg
+
+
+def set_custom_domain(
+    domain: str,
+    config_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """
+    Bind (or clear) a custom domain in `client_ops_config.json` and synchronize
+    `website_url`, `terms_url`, `cgv_url`, and `privacy_url` automatically.
+    """
+    p = Path(config_path) if config_path else DEFAULT_CONFIG_PATH
+    cfg = load_provider_config(p)
+    raw = re.sub(r"^https?://", "", (domain or "").strip().lower()).split("/", 1)[0].strip().rstrip(".")
+    if raw and not re.match(r"^[a-z0-9.-]+\.[a-z]{2,}$", raw):
+        raise ValueError(f"Invalid custom domain format: '{domain}'")
+
+    prov = cfg["provider"]
+    if raw:
+        base = f"https://{raw}"
+        prov["custom_domain"] = raw
+        prov["website_url"] = f"{base}/"
+        prov["terms_url"] = f"{base}/terms.html"
+        prov["cgv_url"] = f"{base}/cgv.html"
+        prov["privacy_url"] = f"{base}/privacy.html"
+    else:
+        default_base = "https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite"
+        prov["custom_domain"] = ""
+        prov["website_url"] = f"{default_base}/"
+        prov["terms_url"] = f"{default_base}/terms.html"
+        prov["cgv_url"] = f"{default_base}/cgv.html"
+        prov["privacy_url"] = f"{default_base}/privacy.html"
+
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return cfg
 
 

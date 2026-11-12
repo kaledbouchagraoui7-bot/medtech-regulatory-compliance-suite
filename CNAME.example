@@ -1,0 +1,16 @@
+# Sentinel Regulatory & Technical Operations — Custom Domain Setup (EUR 0.00 GitHub Pages / Cloudflare)
+#
+# DO NOT rename this file directly to `docs/CNAME` until your custom domain DNS records are configured.
+#
+# Zero-Cost Binding Workflow:
+# 1. Point an apex domain or subdomain (e.g., `sentinel-regulatory.eu` or `audit.your-domain.fr`)
+#    to GitHub Pages (`kaledbouchagraoui7-bot.github.io`) via Cloudflare Free DNS (CNAME or A records
+#    `185.199.108.153` .. `185.199.111.153`).
+# 2. Run the automated configurator to update `client_ops_config.json`, rebuild `docs/` + `site_deploy_ready/`,
+#    and enable the clean domain across outreach emails and 300-DPI scorecards:
+#
+#      python client_ops_automation.py set-custom-domain --domain sentinel-regulatory.eu
+#
+# 3. Copy or write your chosen domain into `docs/CNAME` and push to GitHub Pages `main`.
+#
+sentinel-regulatory.example.eu

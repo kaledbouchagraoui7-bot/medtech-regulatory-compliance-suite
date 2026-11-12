@@ -47,6 +47,7 @@ from legal_terms import (
     build_legal_web_pages,
     load_provider_config,
     render_terms_txt,
+    set_custom_domain,
 )
 
 WORKSPACE_DIR = SUITE_DIR / "client_delivery_workspace"
@@ -145,7 +146,7 @@ def save_engagements(rows: list[dict[str, Any]], engagements_json: Path = ENGAGE
     csv_path = engagements_json.with_suffix(".csv")
     fields = [
         "engagement_id", "created_at", "updated_at", "company", "domain",
-        "contact_email", "country", "sector", "track", "fee_label", "status",
+        "contact_email", "country", "sector", "track", "engagement_mode", "fee_label", "status",
         "qa_passed", "zip_path", "onboarding_draft_path", "delivery_draft_path",
     ]
     with csv_path.open("w", encoding="utf-8", newline="") as f:
@@ -196,6 +197,7 @@ def create_engagement(
     country: str = "FR",
     sector: str = "MedTech OEM",
     fee_label: str = "",
+    engagement_mode: str = "paid_fixed_scope",
     device_term: str = "",
     condition_term: str = "",
     epmc_query: str = "",
@@ -207,6 +209,12 @@ def create_engagement(
     workspace_dir: Path | None = None,
 ) -> dict[str, Any]:
     norm_track = normalize_track(track)
+    raw_mode = str(engagement_mode or "paid_fixed_scope").strip().lower()
+    norm_mode = (
+        "design_partner_pilot"
+        if raw_mode in ("pilot", "design_partner_pilot", "zero_cost_pilot", "partner_pilot")
+        else "paid_fixed_scope"
+    )
     ws = workspace_dir or engagements_json.parent
     existing = load_engagements(engagements_json)
 
@@ -222,6 +230,14 @@ def create_engagement(
     for sub in ("onboarding", "deliverables", "qa", "delivery"):
         (eng_dir / sub).mkdir(parents=True, exist_ok=True)
 
+    resolved_fee = fee_label.strip()
+    if not resolved_fee:
+        resolved_fee = (
+            "EUR 0.00 (Design Partner Pilot)"
+            if norm_mode == "design_partner_pilot"
+            else DEFAULT_TRACK_FEES.get(norm_track, "EUR 350")
+        )
+
     rec = {
         "engagement_id": eid,
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -232,7 +248,8 @@ def create_engagement(
         "country": (country or "FR").strip().upper(),
         "sector": (sector or "MedTech OEM").strip(),
         "track": norm_track,
-        "fee_label": (fee_label or DEFAULT_TRACK_FEES.get(norm_track, "EUR 350")).strip(),
+        "engagement_mode": norm_mode,
+        "fee_label": resolved_fee,
         "device_term": device_term.strip(),
         "condition_term": condition_term.strip(),
         "epmc_query": epmc_query.strip(),
@@ -251,9 +268,21 @@ def create_engagement(
     return upsert_engagement(rec, engagements_json)
 
 
-def resolve_payment_block(track: str, fee_label: str, cfg: dict[str, Any]) -> str:
+def resolve_payment_block(
+    track: str,
+    fee_label: str,
+    cfg: dict[str, Any],
+    engagement_mode: str = "paid_fixed_scope",
+) -> str:
     pay = cfg.get("payment", {})
     prov = cfg.get("provider", {})
+    if str(engagement_mode or "").strip().lower() == "design_partner_pilot":
+        return (
+            f"Fixed Fee: EUR 0.00 / CHF 0.00 — Zero-Cost Design Partner Pilot ({prov.get('vat_notice', 'TVA non applicable, art. 293 B du CGI')})\n"
+            "- No invoice, Stripe payment link, or bank transfer required for this scoped pilot deliverable.\n"
+            "- Reciprocity Request: Short written QA accuracy feedback (2-3 sentences) after your team reviews "
+            "the deliverable pack, plus an anonymized reference quote only if the output meets internal QA expectations."
+        )
     links = pay.get("stripe_payment_links", {})
     stripe_url = (links.get(track) or "").strip()
     bank = pay.get("bank_transfer", {})
@@ -348,8 +377,14 @@ def stage_onboarding(
     terms_txt_path = onb_dir / "TERMS_OF_SERVICE_AND_DISCLAIMER.txt"
     terms_txt_path.write_text(render_terms_txt(track=eng["track"], cfg=cfg), encoding="utf-8")
 
+    eng_mode = eng.get("engagement_mode", "paid_fixed_scope")
     deliverables_desc, inputs_needed = _track_deliverables_and_inputs(eng["track"], eng["domain"])
-    payment_block = resolve_payment_block(eng["track"], eng["fee_label"], cfg)
+    if eng_mode == "design_partner_pilot":
+        inputs_needed = (
+            f"Please confirm: (a) legal authorization to run passive/public-registry checks for {eng['domain']} "
+            "(and optional device/PICO keywords), and (b) 2-3 sentences of written QA feedback once delivered."
+        )
+    payment_block = resolve_payment_block(eng["track"], eng["fee_label"], cfg, engagement_mode=eng_mode)
     turnaround_h = int(ops.get("default_turnaround_hours", 48))
 
     intake_line = (
@@ -363,7 +398,22 @@ def stage_onboarding(
         else "Terms & Liability Disclaimer attached as TERMS_OF_SERVICE_AND_DISCLAIMER.txt."
     )
 
-    subject = f"Onboarding & Scope Confirmation — {eng['company']} ({eng['engagement_id']})"
+    sec3_title = (
+        "3. ZERO-COST DESIGN PARTNER PILOT TERMS (EUR 0.00 / CHF 0.00)"
+        if eng_mode == "design_partner_pilot"
+        else "3. INVOICING & PAYMENT OPTIONS"
+    )
+    reply_ask = (
+        "Simply reply to this thread confirming the target scope so I can prepare your EUR 0.00 pilot deliverable pack."
+        if eng_mode == "design_partner_pilot"
+        else "Simply reply to this thread with your confirmation and billing details so I can trigger the run."
+    )
+    subj_prefix = (
+        "Design Partner Pilot Onboarding"
+        if eng_mode == "design_partner_pilot"
+        else "Onboarding & Scope Confirmation"
+    )
+    subject = f"{subj_prefix} — {eng['company']} ({eng['engagement_id']})"
     body = (
         f"Hi {eng['company']} team,\n\n"
         f"Thank you for your reply regarding {eng['domain']}. I have staged engagement {eng['engagement_id']} "
@@ -372,12 +422,12 @@ def stage_onboarding(
         f"{deliverables_desc}\n\n"
         f"2. CONFIRMATION & KICKOFF INPUTS\n"
         f"{inputs_needed}{intake_line}\n\n"
-        f"3. INVOICING & PAYMENT OPTIONS\n"
+        f"{sec3_title}\n"
         f"{payment_block}\n\n"
         f"4. PASSIVE SCOPE & LEGAL TERMS (v{TERMS_VERSION})\n"
         f"All deliverables serve as technical QA/RA preparation aids (not formal legal or clinical advice) "
         f"under strict ALCOA+ traceability, with provider liability capped at fees paid. {terms_ref_line}\n\n"
-        f"Simply reply to this thread with your confirmation and billing details so I can trigger the run.\n\n"
+        f"{reply_ask}\n\n"
         f"Best regards,\n"
         f"{prov.get('operator_name', 'Kaled Bouchagraoui')}\n"
         f"{prov.get('brand_name', 'Sentinel Regulatory & Technical Operations')} — {prov.get('jurisdiction_city', 'Strasbourg, France')}"
@@ -438,6 +488,7 @@ def stage_positive_reply_onboarding(
     sector: str = "MedTech OEM",
     track: str = "sentinel_compliance",
     fee_label: str = "",
+    engagement_mode: str = "paid_fixed_scope",
     staged_replies_dir: Path = STAGED_REPLIES_DIR,
     engagements_json: Path = ENGAGEMENTS_JSON,
     config_path: Path | None = None,
@@ -448,7 +499,14 @@ def stage_positive_reply_onboarding(
     """
     intent = classify_reply_intent(fresh_text)
     norm_track = normalize_track(track)
-    fee = (fee_label or DEFAULT_TRACK_FEES.get(norm_track, "EUR 350")).strip()
+    mode_norm = (
+        "design_partner_pilot"
+        if str(engagement_mode or "").strip().lower() in ("pilot", "design_partner_pilot", "zero_cost_pilot", "partner_pilot")
+        else "paid_fixed_scope"
+    )
+    fee = (
+        (fee_label or ("EUR 0.00 (Design Partner Pilot)" if mode_norm == "design_partner_pilot" else DEFAULT_TRACK_FEES.get(norm_track, "EUR 350"))).strip()
+    )
 
     # Reuse existing engagement for same domain + email if not yet delivered, else create new
     existing = None
@@ -470,6 +528,7 @@ def stage_positive_reply_onboarding(
             country=country,
             sector=sector,
             fee_label=fee,
+            engagement_mode=mode_norm,
             engagements_json=engagements_json,
         )
     onb = stage_onboarding(
@@ -1000,6 +1059,11 @@ def main(argv: list[str] | None = None) -> int:
     p_web = sub.add_parser("build-legal-web", help="Generate static terms.html, privacy.html, and _headers for free hosting")
     p_web.add_argument("--out-dir", default=str(SITE_DEPLOY_DIR))
 
+    p_dom = sub.add_parser("set-custom-domain", help="Bind or clear a custom domain in client_ops_config.json and rebuild storefront/docs")
+    p_dom.add_argument("--domain", required=True, help="Custom domain (e.g. sentinel-regulatory.eu) or empty string to reset")
+    p_dom.add_argument("--config", default="", help="Optional path to client_ops_config.json")
+    p_dom.add_argument("--no-rebuild", action="store_true", help="Skip rebuilding site_deploy_ready/ and docs/")
+
     sub.add_parser("status", help="Show active engagements and lifecycle statuses")
 
     p_ce = sub.add_parser("create-engagement", help="Register a new client engagement")
@@ -1010,6 +1074,7 @@ def main(argv: list[str] | None = None) -> int:
     p_ce.add_argument("--country", default="FR")
     p_ce.add_argument("--sector", default="MedTech OEM")
     p_ce.add_argument("--fee", default="")
+    p_ce.add_argument("--mode", choices=["paid_fixed_scope", "design_partner_pilot"], default="paid_fixed_scope")
     p_ce.add_argument("--device-term", default="")
     p_ce.add_argument("--condition-term", default="")
     p_ce.add_argument("--epmc-query", default="")
@@ -1047,13 +1112,31 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[build-legal-web] Static storefront & legal site bundle ready -> {args.out_dir} ({len(res)} files)")
         return 0
 
+    if args.cmd == "set-custom-domain":
+        cfg_p = Path(args.config) if args.config else None
+        cfg_updated = set_custom_domain(args.domain, config_path=cfg_p)
+        prov_u = cfg_updated["provider"]
+        print(
+            f"[set-custom-domain] custom_domain='{prov_u.get('custom_domain', '')}' "
+            f"| website_url={prov_u.get('website_url', '')}"
+        )
+        if not args.no_rebuild:
+            build_legal_web_pages(SITE_DEPLOY_DIR, cfg=cfg_updated)
+            try:
+                from site_builder import build_storefront_bundle
+                build_storefront_bundle(SITE_DEPLOY_DIR, cfg=cfg_updated, sync_docs_dir=SUITE_DIR / "docs")
+            except Exception as exc:
+                print(f"[set-custom-domain] Storefront rebuild warning: {exc}")
+        return 0
+
     if args.cmd == "status":
         rows = load_engagements()
         print(f"[status] {len(rows)} engagement(s) in {ENGAGEMENTS_JSON}")
         for r in rows:
             print(
                 f"  - {r['engagement_id']} | {r['company']} ({r['domain']}) | track={r['track']} | "
-                f"status={r['status']} | qa={r.get('qa_passed')} | fee={r.get('fee_label')}"
+                f"mode={r.get('engagement_mode', 'paid_fixed_scope')} | status={r['status']} | "
+                f"qa={r.get('qa_passed')} | fee={r.get('fee_label')}"
             )
         return 0
 
@@ -1066,6 +1149,7 @@ def main(argv: list[str] | None = None) -> int:
             country=args.country,
             sector=args.sector,
             fee_label=args.fee,
+            engagement_mode=args.mode,
             device_term=args.device_term,
             condition_term=args.condition_term,
             epmc_query=args.epmc_query,

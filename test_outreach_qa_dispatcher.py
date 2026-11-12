@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Unit & integration tests for outreach_qa_dispatcher.py (120–150 words, real pricing, single-pass humanizer)."""
+"""Unit & integration tests for outreach_qa_dispatcher.py (85–125 words, deliverability shield, smoking-gun gates)."""
 
 import csv
+import datetime as dt
 import json
 import os
 import shutil
@@ -14,12 +15,20 @@ from unittest.mock import MagicMock, patch
 
 from outreach_qa_dispatcher import (
     build_evidence_email,
+    classify_recipient_mailbox,
+    count_recent_24h_sent_breakdown,
     count_words,
     evaluate_4_detectors,
+    evaluate_smoking_gun_trigger,
+    is_email_suppressed,
     is_target_icp_entity,
+    is_valid_mx_exchange,
     load_dotenv_files,
+    parse_mx_answer_record,
     process_dispatch_queue,
+    receptionist_routing_line,
     run_qa_humanizer_loop,
+    verify_email_and_domain_hygiene,
     verify_professionalism,
 )
 
@@ -64,13 +73,12 @@ class TestOutreachQADispatcher(unittest.TestCase):
         self.assertFalse(qa["professionalism_ok"])
         self.assertTrue(any("for free" in issue or "Below" in issue or "Missing explicit price" in issue for issue in qa["professionalism_issues"]))
 
-    def test_single_pass_humanizer_strips_cliches_and_enforces_120_to_150_words_with_price(self) -> None:
+    def test_single_pass_humanizer_strips_cliches_and_enforces_85_to_125_words_with_price(self) -> None:
         stiff_draft = (
             "Hello Treuhand Demo team,\n\n"
-            "I hope this email finds you well. In today's digital landscape, while reading client reviews for "
-            "Treuhand Demo on treuhand-demo.ch, clients consistently praise your responsive tax advisory work. "
-            "I evaluated treuhand-demo.ch using my passive 25-control Sentinel evaluation system (scorecard and "
-            "evaluation system PDF attached, with source code on GitHub at medtech-regulatory-compliance-suite), "
+            "I hope this email finds you well. In today's digital landscape, while reviewing public compliance posture for "
+            "Treuhand Demo on treuhand-demo.ch, I evaluated treuhand-demo.ch using my passive 25-control Sentinel evaluation "
+            "system (scorecard and evaluation system PDF attached, with source code on GitHub at medtech-regulatory-compliance-suite), "
             "where your domain scored 47/100.\n\n"
             "Specifically, the scan flagged that no _dmarc.treuhand-demo.ch policy is published, remote Google Fonts "
             "transmit visitor IPs before consent, and HTTP HSTS/CSP headers are missing. Fixing these stops spoofed "
@@ -93,12 +101,12 @@ class TestOutreachQADispatcher(unittest.TestCase):
         )
         self.assertTrue(qa["approved"], f"Expected single-pass approval, got: {qa}")
         self.assertEqual(qa["passes_used"], 1)
-        self.assertGreaterEqual(qa["word_count"], 120)
-        self.assertLessEqual(qa["word_count"], 150)
+        self.assertGreaterEqual(qa["word_count"], 85)
+        self.assertLessEqual(qa["word_count"], 125)
         self.assertIn("350 CHF", qa["final_body"])
         self.assertNotIn("for free", qa["final_body"].lower())
 
-    def test_evidence_emails_en_de_fr_are_120_to_150_words_and_attach_both_scorecard_and_system_pdf(self) -> None:
+    def test_evidence_emails_en_de_fr_are_85_to_125_words_and_attach_both_scorecard_and_system_pdf(self) -> None:
         ev_json = self.temp_dir / "treuhand_demo_ch_raw_evidence.json"
         ev_json.write_text(json.dumps(self.sample_audit), encoding="utf-8")
         fake_png = self.temp_dir / "scorecard.png"
@@ -117,8 +125,8 @@ class TestOutreachQADispatcher(unittest.TestCase):
         self.assertEqual(res["approved_count"], 3, f"Expected 3 approved, got: {res['results']}")
         self.assertEqual(res["blocked_count"], 0)
         for r in res["results"]:
-            self.assertGreaterEqual(r["word_count"], 120)
-            self.assertLessEqual(r["word_count"], 150)
+            self.assertGreaterEqual(r["word_count"], 85)
+            self.assertLessEqual(r["word_count"], 125)
             self.assertEqual(r["passes_used"], 1)
 
         eml_files = list(res["drafts_dir"].glob("*.eml"))
@@ -141,11 +149,13 @@ class TestOutreachQADispatcher(unittest.TestCase):
         }
         _subj, body = build_evidence_email(two_gap_audit, "Two Gaps Ltd", "info@two-gaps.co.uk", lang="en", country="UK")
         wc = count_words(body)
-        self.assertGreaterEqual(wc, 120)
-        self.assertLessEqual(wc, 150)
+        self.assertGreaterEqual(wc, 85)
+        self.assertLessEqual(wc, 125)
         self.assertNotIn("for free", body.lower())
         self.assertNotIn("github.com", body.lower())
+        self.assertNotIn("kaledbouchagraoui7-bot", body.lower())
         self.assertIn("£", body)
+        self.assertIn("forward this brief", body.lower())
 
     def test_load_dotenv_files_reads_custom_env_without_overwriting(self) -> None:
         env_file = self.temp_dir / ".env"
@@ -289,6 +299,119 @@ class TestOutreachQADispatcher(unittest.TestCase):
             )
             self.assertFalse(ok, f"Expected verify_professionalism to reject '{bad_phrase}'")
             self.assertTrue(any("Banned phrase" in x for x in issues))
+
+    def test_deliverability_shield_hygiene_mx_and_classification(self) -> None:
+        self.assertEqual(classify_recipient_mailbox("info@medtech.fr"), "receptionist_generic")
+        self.assertEqual(classify_recipient_mailbox("contact@medtech.fr"), "receptionist_generic")
+        self.assertEqual(classify_recipient_mailbox("regulatory@medtech.fr"), "functional_owner")
+        self.assertEqual(classify_recipient_mailbox("j.dupont@medtech.fr"), "named_direct")
+
+        self.assertIn("transmettre", receptionist_routing_line("info@medtech.fr", "MedTech SAS", lang="fr", sector="MedTech OEM"))
+        self.assertIn("forward", receptionist_routing_line("contact@medtech.fr", "MedTech Ltd", lang="en", sector="MedTech RA"))
+        self.assertEqual(receptionist_routing_line("regulatory@medtech.fr", "MedTech SAS", lang="fr"), "")
+
+        self.assertEqual(parse_mx_answer_record("0 ."), (0, "."))
+        self.assertEqual(parse_mx_answer_record("10 aspmx.l.google.com."), (10, "aspmx.l.google.com"))
+        self.assertFalse(is_valid_mx_exchange(".", priority=0)[0])
+        self.assertFalse(is_valid_mx_exchange("mail.sedoparking.com", priority=10)[0])
+        self.assertTrue(is_valid_mx_exchange("aspmx.l.google.com", priority=10)[0])
+
+        # Free webmail, disposable, off-domain checks
+        self.assertFalse(verify_email_and_domain_hygiene("yourglobalrep@gmail.com", "biotech.com", check_mx=False)[0])
+        self.assertTrue(verify_email_and_domain_hygiene("founder@gmail.com", "gmail.com", check_mx=False, allow_verified_webmail=True)[0])
+        self.assertFalse(verify_email_and_domain_hygiene("qa@mailinator.com", "mailinator.com", check_mx=False)[0])
+        self.assertFalse(verify_email_and_domain_hygiene("contact@unrelatedagency.io", "medtech.fr", check_mx=False)[0])
+        self.assertTrue(verify_email_and_domain_hygiene("info@medtech-group.fr", "medtech.fr", check_mx=False)[0])
+
+        # DoH Null MX rejection vs valid MX acceptance
+        null_mx_resp = MagicMock(status_code=200)
+        null_mx_resp.json.return_value = {"Status": 0, "Answer": [{"type": 15, "data": "0 ."}]}
+        with patch("outreach_qa_dispatcher.requests.get", return_value=null_mx_resp):
+            ok_null, reason_null, _ = verify_email_and_domain_hygiene("qa@nullmx.fr", "nullmx.fr", check_mx=True)
+        self.assertFalse(ok_null)
+        self.assertEqual(reason_null, "NULL_MX_REJECTED")
+
+        good_mx_resp = MagicMock(status_code=200)
+        good_mx_resp.json.return_value = {"Status": 0, "Answer": [{"type": 15, "data": "10 mx.medtech.fr."}]}
+        with patch("outreach_qa_dispatcher.requests.get", return_value=good_mx_resp):
+            ok_good, reason_good, meta_good = verify_email_and_domain_hygiene("qa@medtech.fr", "medtech.fr", check_mx=True)
+        self.assertTrue(ok_good, reason_good)
+        self.assertIn("10 mx.medtech.fr", meta_good["mx_hosts"])
+
+        self.assertEqual(is_email_suppressed("no@bad.fr", "bad.fr", {"bad.fr": "OPTOUT"}, {}), (True, "OPTOUT"))
+        self.assertEqual(is_email_suppressed("alt@bad.fr", "bad.fr", {}, {"only@bad.fr": "BOUNCE"}), (False, ""))
+
+        # Primary vs follow-up 24h breakdown counter
+        now_ts = dt.datetime(2026, 11, 12, 10, 0, tzinfo=dt.timezone.utc)
+        ledger = self.temp_dir / "sent_ledger.csv"
+        master = self.temp_dir / "outreach_master_status.csv"
+        ledger.write_text(
+            "timestamp_utc,to_email,domain,country,sector,price,word_count,avg_ai_pct,gmail_message_id\n"
+            "2026-11-12T08:00:00+00:00,qa@a.fr,a.fr,FR,MedTech OEM,EUR 350,100,0.0,m1\n"
+            "2026-11-12T09:00:00+00:00,qa@b.fr,b.fr,FR,MedTech OEM,EUR 350,100,0.0,m2\n"
+            "2026-11-10T09:00:00+00:00,old@c.fr,c.fr,FR,MedTech OEM,EUR 350,100,0.0,m0\n",
+            encoding="utf-8",
+        )
+        master.write_text(
+            "Wave,Timestamp_UTC,Domain,Company,Country,Sector,Language,To_Email,Price,Word_Count,Avg_AI_Pct,Gmail_ID,Status\n"
+            "Wave_6,2026-11-12T08:00:00+00:00,a.fr,A SAS,FR,MedTech OEM,fr,qa@a.fr,EUR 350,100,0.0,m1,DELIVERED_AWAITING_REPLY\n"
+            "FollowUp_1,2026-11-12T09:00:00+00:00,b.fr,B SAS,FR,MedTech OEM,fr,qa@b.fr,EUR 350,100,0.0,m2,DELIVERED_AWAITING_REPLY\n",
+            encoding="utf-8",
+        )
+        brk = count_recent_24h_sent_breakdown(ledger, master_csv=master, now_utc=now_ts)
+        self.assertEqual(brk, {"total": 2, "primary": 1, "followup": 1})
+
+    def test_smoking_gun_trigger_gates_all_tracks(self) -> None:
+        # Track 1: mild score (>75) and headers-only rejected; SPF PermError or DMARC+CAA accepted
+        mild_audit = {"overall_score": 82, "fail_count": 0, "warn_count": 1, "pass_count": 24, "findings": []}
+        self.assertFalse(evaluate_smoking_gun_trigger("sentinel_compliance", mild_audit, sector="MedTech OEM")[0])
+
+        headers_only = {
+            "overall_score": 70, "fail_count": 1, "warn_count": 1, "pass_count": 20,
+            "spf_diagnostics": {"total_lookups": 3, "exceeds_limit": False},
+            "cmp_diagnostics": {"has_reject_copy_in_html": True},
+            "findings": [
+                {"id": "EML-01", "status": "PASS", "evidence": "v=DMARC1; p=reject;"},
+                {"id": "EML-02", "status": "PASS", "evidence": "3/10 DNS lookups"},
+                {"id": "EML-04", "status": "PASS", "evidence": "CAA present"},
+                {"id": "PRV-01", "status": "PASS", "evidence": "Local fonts"},
+                {"id": "SEC-09", "status": "PASS", "evidence": "security.txt present"},
+                {"id": "SEC-03", "status": "FAIL", "evidence": "Missing CSP"},
+            ],
+        }
+        self.assertFalse(evaluate_smoking_gun_trigger("sentinel_compliance", headers_only, sector="MedTech OEM")[0])
+
+        spf_broken = {
+            "overall_score": 68, "fail_count": 2, "warn_count": 1, "pass_count": 18,
+            "spf_diagnostics": {"total_lookups": 12, "exceeds_limit": True},
+            "findings": [{"id": "EML-02", "status": "FAIL", "title": "SPF exceeding 10", "evidence": "12/10 DNS lookups"}],
+        }
+        ok_t1, reason_t1, _ = evaluate_smoking_gun_trigger("sentinel_compliance", spf_broken, sector="MedTech OEM")
+        self.assertTrue(ok_t1)
+        self.assertEqual(reason_t1, "SPF_PERMERROR_OR_BROKEN")
+
+        # Track 2: PMS MAUDE concrete problem vs low generic signal
+        weak_pms = {
+            "maude_summary": {"total_events_analyzed": 5, "event_type_counts": {"Malfunction": 5}, "top_device_problems": [{"problem": "Unknown"}]},
+            "recalls_and_510k": [], "clinical_trials": [],
+        }
+        self.assertFalse(evaluate_smoking_gun_trigger("pms_openfda_psur", weak_pms)[0])
+        strong_pms = {
+            "maude_summary": {"total_events_analyzed": 85, "event_type_counts": {"Malfunction": 70, "Injury": 15}, "top_device_problems": [{"problem": "Battery Depletion"}]},
+            "recalls_and_510k": [{"record_type": "510(k)"}], "clinical_trials": [{"nct_id": "NCT1"}],
+        }
+        ok_t2, reason_t2, _ = evaluate_smoking_gun_trigger("pms_openfda_psur", strong_pms)
+        self.assertTrue(ok_t2)
+        self.assertIn("MAUDE_85_EVENTS", reason_t2)
+
+        # Track 3: PRISMA workflow hours trigger
+        weak_lit = {"prisma_verified": {"total_identified": 6, "duplicates_removed": 0, "excluded_at_screening": 0, "excluded_at_full_text": 0, "studies_included": 6}}
+        self.assertFalse(evaluate_smoking_gun_trigger("clinical_lit_prisma", weak_lit)[0])
+        strong_lit = {"prisma_verified": {"total_identified": 24, "duplicates_removed": 3, "excluded_at_screening": 7, "excluded_at_full_text": 2, "studies_included": 12}}
+        ok_t3, reason_t3, meta_t3 = evaluate_smoking_gun_trigger("clinical_lit_prisma", strong_lit)
+        self.assertTrue(ok_t3)
+        self.assertIn("PRISMA_24TO12_SAVES_", reason_t3)
+        self.assertGreater(meta_t3["est_hours_saved"], 5.0)
 
 
 if __name__ == "__main__":

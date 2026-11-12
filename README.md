@@ -11,7 +11,7 @@
 [![Regulatory Scope](https://img.shields.io/badge/Scope-EU_MDR_%7C_Swiss_nFADP_%7C_PRISMA_2020-0D9488.svg)](#architecture--dual-engine-design)
 [![Storefront](https://img.shields.io/badge/Service_Catalog-Storefront_%26_Legal_(EN%2FFR)-0F172A.svg)](https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/)
 
-> **Executive Storefront & Scope Preview:** Explore fixed-scope 48h client deliverables, bilingual legal terms (EN Terms / FR CGV), and complimentary 1-page diagnostic requests at **[kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/](https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/)**.
+> **Executive Storefront & Scope Preview:** Explore fixed-scope 48h client deliverables, interactive DNS/MAUDE/PRISMA pre-checks, Design Partner Pilot intake, and bilingual legal copy at **[Executive Storefront, Live Pre-Check & Bilingual Terms (EN / FR)](https://kaledbouchagraoui7-bot.github.io/medtech-regulatory-compliance-suite/)**.
 
 ---
 
