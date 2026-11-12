@@ -1262,13 +1262,13 @@ def render_seo_pages(cfg: dict[str, Any], target: Path) -> dict[str, Path]:
                 "lead_en": "Accelerate recurring PSUR, PMS Plan, and PRRC safety reviews for Class IIa/IIb/III medical devices across Swiss (MedDO) and French/EU manufacturers.",
                 "lead_fr": "Accélérez vos cycles PSUR, PMS et revues PRRC pour dispositifs médicaux Classe IIa/IIb/III en France et en Suisse (ODim / MedDO).",
                 "bullets_en": [
-                    ("Monthly Z-Score Signal Spike Alerts (Z >= 2.0)", "Computes chronological monthly MAUDE baseline mean and standard deviation to surface statistically abnormal event spikes."),
+                    ("Monthly Z-Score Volume Flags (Z >= 2.0) — Flagged for Review", "Computes chronological monthly MAUDE baseline mean and standard deviation to flag volume excursions for PRRC investigation (raw reporting counts, not incidence rates)."),
                     ("Predicate 510(k) & FDA Recall Stratification", "Consolidates K-numbers, decision dates, and Class I/II/III enforcement records into filterable Excel tables."),
                     ("ClinicalTrials.gov v2 Clickable PMCF Registry", "Pairs live interventional and observational study NCT links with sponsor, phase, status, and enrollment counts."),
                     ("ALCOA+ Provenance & Zero Guesses", "Blank narratives or unmapped FDA device codes are clearly shaded in soft amber with timestamped API query metadata."),
                 ],
                 "bullets_fr": [
-                    ("Alertes Statistiques Mensuelles Z-Score (Z >= 2.0)", "Agrège les séries mensuelles OpenFDA MAUDE pour détecter automatiquement les pics anormaux de signalement."),
+                    ("Signaux Mensuels Z-Score (Z >= 2.0) — À Examiner", "Agrège les séries mensuelles OpenFDA MAUDE pour signaler les pics de déclarations à investiguer par la PRRC (volumes bruts, hors taux d'incidence)."),
                     ("Historique 510(k) & Rappels Produits FDA", "Consolide les numéros K, dates de décision et classes de rappel dans un classeur Excel filtrable."),
                     ("Registre PMCF ClinicalTrials.gov v2 Cliquable", "Relie directement chaque étude clinique active/terminée par lien NCT officiel avec promoteur et effectifs."),
                     ("Traçabilité ALCOA+ & Zéro Donnée Inventée", "Tout champ source manquant reste surligné ambre pour revue QA avec horodatage exact des requêtes API."),
@@ -1290,13 +1290,13 @@ def render_seo_pages(cfg: dict[str, Any], target: Path) -> dict[str, Path]:
                 "lead_en": "Built for CROs, Medical Writers, and Clinical Affairs leaders in Switzerland and France compiling Clinical Evaluation Reports (CER), IVDR performance files, and CTD Module 2.5 digests.",
                 "lead_fr": "Conçu pour les CRO, rédacteurs médicaux et directions cliniques en France et Suisse préparant des rapports CER (Annexe XIV), dossiers IVDR ou synthèses CTD 2.5.",
                 "bullets_en": [
-                    ("Conserved PRISMA 2020 Arithmetic Flow", "Strict N_identified - N_dup - N_excluded = N_included verification baked into Excel COUNTIFS and 300-DPI PNG/PDF diagrams."),
-                    ("Ready-to-Import .ris & .bib Reference Files", "Every pack ships UTF-8 .ris (EndNote / Zotero) and .bib (LaTeX / JabRef) libraries built from included PubMed/Europe PMC studies."),
-                    ("Study-Design Risk-of-Bias Framework Summary", "Automatically maps randomized (RoB 2), observational (NOS), and appraisal (JBI) counts without inventing unverified scores."),
-                    ("ICH E6/E9 Cohort Table 1 & Amber QA Flags", "Includes Shapiro-Wilk parametric/non-parametric summary workbook alongside full Word Vancouver dossier."),
+                    ("Mechanical Prep for PRISMA 2020 Flow", "Automates the mechanical prep (PMID/DOI deduplication and COUNTIFS flow checks) ahead of human PICO screening and bias grading — not a standalone systematic review."),
+                    ("Ready-to-Import .ris & .bib Reference Files", "Every pack ships UTF-8 .ris (EndNote / Zotero) and .bib (LaTeX / JabRef) libraries built from retrieved PubMed/Europe PMC studies."),
+                    ("Study-Design Risk-of-Bias Framework Summary", "Maps randomized (RoB 2), observational (NOS), and appraisal (JBI) template buckets for human review without inventing scores."),
+                    ("ICH E6/E9 Cohort Table 1 & Amber QA Flags", "Includes Shapiro-Wilk parametric/non-parametric summary workbook alongside full Word Vancouver draft."),
                 ],
                 "bullets_fr": [
-                    ("Équation PRISMA 2020 Vérifiée par Formules", "Conservation arithmétique stricte intégrée aux formules COUNTIFS Excel et au diagramme 300 DPI PNG/PDF."),
+                    ("Préparation Mécanique PRISMA 2020", "Automatise la préparation mécanique (dédoublonnage et formules COUNTIFS) avant tri clinique PICO humain — ne remplace pas une revue systématique."),
                     ("Exports .ris (Zotero / EndNote) & .bib (BibTeX)", "Chaque livraison inclut les fichiers bibliographiques UTF-8 prêts à importer depuis les études retenues."),
                     ("Cartographie Biais par Schéma (RoB 2 / NOS)", "Agrège automatiquement les cadres d'évaluation adaptés aux essais randomisés et études observationnelles."),
                     ("Table 1 Biostatistiques ICH E9 & Surlignage Ambre QA", "Inclut les tests de normalité Shapiro-Wilk et le dossier Word Vancouver avec DOI cliquables."),
@@ -1876,14 +1876,14 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
             <span class="lang-fr">Suisse &middot; France &middot; UE MedTech &middot; Biotech &middot; CROs &middot; Cabinets AR</span>
           </div>
           <h1>
-            <span class="lang-en">Audit-Ready Technical Compliance, PSUR Safety &amp; PRISMA 2020 Dossiers in 48 Hours.</span>
-            <span class="lang-fr">Audits de Conformité, Dossiers PSUR/MAUDE &amp; Revues PRISMA 2020 Livrés en 48 Heures.</span>
+            <span class="lang-en">Structured Technical Compliance, PSUR &amp; PRISMA 2020 Prep Dossiers.</span>
+            <span class="lang-fr">Pr&eacute;paration Structur&eacute;e : Audits Passifs, Dossiers PSUR &amp; Flux PRISMA 2020.</span>
           </h1>
           <p class="hero-sub lang-en">
-            Built for QA/RA Directors, PRRCs, Medical Writers, and DPOs across Switzerland, France, and the EU. Every deliverable ships as a sign-off-ready Word dossier, 4-to-6-sheet Excel matrix, 300-DPI executive visual, and SHA-256 ALCOA+ provenance log &mdash; with zero fabricated citations.
+            Built for QA/RA Directors, PRRCs, Medical Writers, and DPOs across Switzerland, France, and the EU. Every deliverable prepares an editable Word draft, 4-to-6-sheet Excel matrix, 300-DPI executive visual, and SHA-256 ALCOA+ log ready for your team's human verification &mdash; with zero fabricated citations.
           </p>
           <p class="hero-sub lang-fr">
-            Conçu pour les Directions Qualité/AR, PRRC, Rédacteurs Médicaux et DPO en Suisse, France et UE. Chaque mission produit un rapport Word structuré, un classeur Excel filtrable à 4–6 onglets, un visuel 300 DPI et un manifeste d'audit ALCOA+ SHA-256 sans aucune donnée inventée.
+            Conçu pour les Directions Qualité/AR, PRRC, Rédacteurs Médicaux et DPO en Suisse, France et UE. Chaque mission prépare un projet Word éditable, un classeur Excel filtrable à 4–6 onglets, un visuel 300 DPI et un manifeste ALCOA+ SHA-256 prêts pour votre revue humaine &mdash; sans aucune donnée inventée.
           </p>
           <div class="hero-actions">
             <a class="btn-primary" href="#intake">
@@ -1974,8 +1974,8 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
             <span class="lang-en">Four Audited Regulatory &amp; Technical Modules</span>
             <span class="lang-fr">Quatre Modules Réglementaires &amp; Techniques Automatisés</span>
           </h2>
-          <p class="lang-en">Transparent fixed-scope delivery in 48 hours. Complimentary 1-page pre-engagement diagnostics allow your QA/IT team to verify accuracy before commissioning a full package.</p>
-          <p class="lang-fr">Forfaits clairs livrés sous 48 heures. Demandez d'abord un aperçu diagnostique gratuit d'une page pour valider la précision technique avant toute commande.</p>
+          <p class="lang-en">Fixed-scope mechanical prep delivered as draft artifacts for your team's QA/PRRC sign-off (typically 48h preparation after scope confirmation). Request a complimentary 1-page preview first.</p>
+          <p class="lang-fr">Forfaits clairs de préparation documentaire remis pour validation interne QA/PRRC (sous 48h après cadrage). Demandez d'abord un aperçu gratuit d'une page.</p>
         </div>
 
         <div class="offers-grid">
@@ -2021,8 +2021,8 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
                 <span class="lang-en">OpenFDA MAUDE &amp; ClinicalTrials.gov PSUR Surveillance</span>
                 <span class="lang-fr">Dossier Veille Post-Marché (PMS / PSUR) OpenFDA &amp; ClinicalTrials</span>
               </h3>
-              <p class="lang-en">Automates FDA MAUDE event stratification (Malfunction, Injury, Death, monthly Z-score signal spikes), predicate 510(k)/recall tracking, and active/completed PMCF trial links under MDCG 2022-21.</p>
-              <p class="lang-fr">Structuration automatisée des rapports MAUDE (pannes, blessures, décès, pics statistiques mensuels Z-score), rappels/510(k) et études PMCF actives sous Règlement UE MDR &amp; MDCG 2022-21.</p>
+              <p class="lang-en">Automates FDA MAUDE raw report stratification (Malfunction, Injury, Death, monthly Z-score flags for PRRC review — not incidence rates), 510(k)/recall logs, and PMCF trial links under MDCG 2022-21.</p>
+              <p class="lang-fr">Structure les déclarations MAUDE (pannes, blessures, décès, signaux Z-score à examiner — hors taux d'incidence), rappels/510(k) et études PMCF sous Règlement UE MDR &amp; MDCG 2022-21.</p>
               <ul class="lang-en">
                 <li>Landscape Word PSUR Surveillance Draft + 300-DPI Dashboard</li>
                 <li>4-Sheet Excel Workbook with Monthly Spike Alerts &amp; <code>NCTId</code> Links</li>
@@ -2050,8 +2050,8 @@ def render_storefront_html(cfg: dict[str, Any] | None = None) -> str:
                 <span class="lang-en">PRISMA 2020 Literature Synthesis &amp; ICH E9 Table 1 Pack</span>
                 <span class="lang-fr">Revue Systématique PRISMA 2020, CER &amp; Table 1 Biostatistiques</span>
               </h3>
-              <p class="lang-en">Dual-source NCBI PubMed + Europe PMC literature screening with verified PRISMA arithmetic conservation, RoB 2 / NOS mapping, Zotero/EndNote .ris &amp; .bib exports, and optional ICH E9 Table 1 cohort stats.</p>
-              <p class="lang-fr">Criblage documentaire PubMed / Europe PMC avec équation PRISMA 2020 vérifiée, cartographie RoB 2 / NOS, exports .ris / .bib pour Zotero/EndNote et Table 1 biostatistiques ICH E9.</p>
+              <p class="lang-en">Automates the mechanical prep across PubMed + Europe PMC (deduplication, PRISMA flow counts, .ris/.bib exports, and ICH E9 Table 1) ready for human PICO &amp; bias review.</p>
+              <p class="lang-fr">Automatise la préparation mécanique PubMed / Europe PMC (dédoublonnage, flux PRISMA, exports .ris/.bib et Table 1 ICH E9) avant tri PICO et évaluation clinique humaine.</p>
               <ul class="lang-en">
                 <li>Vancouver-Cited Word Table + 300-DPI PRISMA 2020 Flow Diagram</li>
                 <li>4-Sheet Excel Matrix (<code>COUNTIFS</code> formulas &amp; amber QA flags)</li>

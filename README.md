@@ -22,7 +22,7 @@ MedTech manufacturers, Software-as-a-Medical-Device (SaMD) companies, Clinical R
 1. **Digital Privacy & Edge Cybersecurity (`Engine A — sentinel_scanner.py`)**: Under **Swiss nFADP (revDSG)**, **EU GDPR**, and **EU MDR Annex I GSPR 17.2 (IT Security)**, public web portals and corporate mail domains must prevent email/invoice spoofing (`DMARC`/`SPF`), block unconsented US IP transfers (`Google Fonts` / pre-consent trackers), enforce HTTP transport hardening (`HSTS`, `CSP`, `X-Frame-Options`), and comply with **European Accessibility Act (EAA / WCAG 2.1 AA)** standards.
 2. **Clinical Evaluation & PRISMA 2020 Traceability (`Engine B — pilot_package_generator.py`)**: Under **EU MDR 2017/745 Annex XIV**, **MEDDEV 2.7/1 Rev 4**, and **Swiss MedDO**, regulatory writers must screen hundreds of PubMed/Embase abstracts and produce ALCOA+ traceable **PRISMA 2020 flowcharts**, **Vancouver-formatted Word evidence tables (`.docx`)**, and **filterable Excel screening matrices (`.xlsx`)**.
 
-This repository combines both engines into a single CLI orchestrator ([`medtech_suite.py`](medtech_suite.py)) that generates a complete **Unified MedTech & CRO Compliance Dossier** in under 15 seconds.
+This repository combines both engines into a single CLI orchestrator ([`medtech_suite.py`](medtech_suite.py)) that automates the mechanical prep for a **Unified MedTech & CRO Compliance Dossier** prior to human QA/PRRC review and verification.
 
 ---
 

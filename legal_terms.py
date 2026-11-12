@@ -181,7 +181,9 @@ def get_legal_clauses(track: str = "general", cfg: dict[str, Any] | None = None)
             "server/DNS configuration snippets are provided strictly as automated engineering and documentation preparation aids. "
             "They do NOT constitute formal legal advice (Rechtsberatung / conseil juridique), clinical medical advice, a binding GDPR/nFADP "
             "adequacy opinion, or an accredited penetration-test certification. All regulatory deliverables must be independently reviewed "
-            "and signed off by the Client's qualified Regulatory Affairs Specialist, PRRC (EU MDR Art. 15), DPO, or legal counsel prior to submission.",
+            "and signed off by the Client's qualified Regulatory Affairs Specialist, PRRC (EU MDR Art. 15), DPO, or legal counsel prior to submission. "
+            "Prior to executing any first paid commercial contract, the minor operator and legal representative will formalize guardian-authorized "
+            "terms and review regulatory-draft liability boundaries with qualified legal counsel.",
         ),
         (
             "3. Zero Fabrication Integrity & Public Source Accuracy",
@@ -228,10 +230,12 @@ def get_privacy_clauses(cfg: dict[str, Any] | None = None) -> list[tuple[str, st
             f"{prov['brand_name']} ({prov['operator_name']}), operating from {prov['jurisdiction_city']}. Privacy & erasure contact: {prov['contact_email']}.",
         ),
         (
-            "Data Processed & Lawful Basis (EU GDPR Art. 6)",
-            "For B2B technical outreach and contracted service delivery, we process only business contact details published on corporate websites "
-            "(role/company email, company domain), client-supplied billing details required for statutory Tiime/French invoicing (GDPR Art. 6(1)(b)/(c)), "
-            "and strictly passive public DNS/TLS/HTTP response metadata or public scientific database records under legitimate business interest (GDPR Art. 6(1)(f) & CNIL B2B guidelines).",
+            "Data Processed, Source Provenance & Lawful Basis (EU GDPR Art. 6 & Art. 14)",
+            "For B2B technical outreach and contracted service delivery, we process only corporate contact details published on official websites, "
+            "public R&D registries (ROR v2, ClinicalTrials.gov, OpenFDA sponsor records), or public business directories, tracked in a local GDPR Art. 14 "
+            "source-provenance ledger alongside date captured and opt-out status, plus client-supplied billing details required for statutory Tiime/French invoicing (GDPR Art. 6(1)(b)/(c)) "
+            "and strictly passive public DNS/TLS/HTTP response metadata under legitimate interest (GDPR Art. 6(1)(f) & CNIL B2B guidelines). Unattended automated outreach "
+            "excludes Switzerland (CH) and Germany (DE), where contact stays manual 1-to-1 only.",
         ),
         (
             "Zero Patient / Special-Category Health Data",
@@ -514,7 +518,7 @@ def get_cgv_fr_clauses(cfg: dict[str, Any] | None = None) -> list[tuple[str, str
         ),
         (
             "3. Absence de Conseil Juridique, Médical ou Audit Certifié",
-            "Les scores, rapports Word (.docx), matrices Excel (.xlsx), diagrammes PRISMA 2020, synthèses PSUR/MAUDE et configurations types (Nginx, Cloudflare, DNS) sont fournis exclusivement comme supports techniques d'ingénierie documentaire. Ils ne constituent ni un conseil juridique, ni un avis médical, ni une certification d'audit ou test d'intrusion. Toute soumission réglementaire ou mise en production doit être validée et signée par le responsable AQ/AR, la PRRC (Règlement UE MDR 2017/745 art. 15), le DPO ou l'administrateur système du Client.",
+            "Les scores, rapports Word (.docx), matrices Excel (.xlsx), diagrammes PRISMA 2020, synthèses PSUR/MAUDE et configurations types (Nginx, Cloudflare, DNS) sont fournis exclusivement comme supports techniques d'ingénierie documentaire. Ils ne constituent ni un conseil juridique, ni un avis médical, ni une certification d'audit ou test d'intrusion. Toute soumission réglementaire ou mise en production doit être validée et signée par le responsable AQ/AR, la PRRC (Règlement UE MDR 2017/745 art. 15), le DPO ou l'administrateur système du Client. Avant toute première prestation payante, le périmètre contractuel et la responsabilité sur les projets documentaires feront l'objet d'une validation avec représentant légal et avis juridique.",
         ),
         (
             "4. Intégrité ALCOA+ & Zéro Fabrication",

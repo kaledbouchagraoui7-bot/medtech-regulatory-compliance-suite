@@ -1,6 +1,6 @@
 ==============================================================================
   SENTINEL REGULATORY & TECHNICAL OPERATIONS — TERMS OF SERVICE & LIABILITY DISCLAIMER
-  Version 2026.1 | Track: general | Generated: 2026-11-12 07:08 UTC
+  Version 2026.1 | Track: general | Generated: 2026-11-12 17:54 UTC
 ==============================================================================
 
 Provider & Commercial Entity Status
@@ -13,7 +13,7 @@ Automated technical compliance posture review, public registry data compilation,
 
 2. No Legal, Medical, Regulatory Approval, or Certified Pen-Test Advice
 -----------------------------------------------------------------------
-All scores, Word dossiers, Excel workbooks, PRISMA tables, PSUR drafts, statutory gatekeeper alerts, and sample server/DNS configuration snippets are provided strictly as automated engineering and documentation preparation aids. They do NOT constitute formal legal advice (Rechtsberatung / conseil juridique), clinical medical advice, a binding GDPR/nFADP adequacy opinion, or an accredited penetration-test certification. All regulatory deliverables must be independently reviewed and signed off by the Client's qualified Regulatory Affairs Specialist, PRRC (EU MDR Art. 15), DPO, or legal counsel prior to submission.
+All scores, Word dossiers, Excel workbooks, PRISMA tables, PSUR drafts, statutory gatekeeper alerts, and sample server/DNS configuration snippets are provided strictly as automated engineering and documentation preparation aids. They do NOT constitute formal legal advice (Rechtsberatung / conseil juridique), clinical medical advice, a binding GDPR/nFADP adequacy opinion, or an accredited penetration-test certification. All regulatory deliverables must be independently reviewed and signed off by the Client's qualified Regulatory Affairs Specialist, PRRC (EU MDR Art. 15), DPO, or legal counsel prior to submission. Prior to executing any first paid commercial contract, the minor operator and legal representative will formalize guardian-authorized terms and review regulatory-draft liability boundaries with qualified legal counsel.
 
 3. Zero Fabrication Integrity & Public Source Accuracy
 ------------------------------------------------------
@@ -40,7 +40,7 @@ These Terms are governed by the Laws of France. In the event of any dispute aris
 ==============================================================================
 
 - Data Controller: Sentinel Regulatory & Technical Operations (Kaled Bouchagraoui), operating from Strasbourg, France. Privacy & erasure contact: kaledbouchagraoui7@gmail.com.
-- Data Processed & Lawful Basis (EU GDPR Art. 6): For B2B technical outreach and contracted service delivery, we process only business contact details published on corporate websites (role/company email, company domain), client-supplied billing details required for statutory Tiime/French invoicing (GDPR Art. 6(1)(b)/(c)), and strictly passive public DNS/TLS/HTTP response metadata or public scientific database records under legitimate business interest (GDPR Art. 6(1)(f) & CNIL B2B guidelines).
+- Data Processed, Source Provenance & Lawful Basis (EU GDPR Art. 6 & Art. 14): For B2B technical outreach and contracted service delivery, we process only corporate contact details published on official websites, public R&D registries (ROR v2, ClinicalTrials.gov, OpenFDA sponsor records), or public business directories, tracked in a local GDPR Art. 14 source-provenance ledger alongside date captured and opt-out status, plus client-supplied billing details required for statutory Tiime/French invoicing (GDPR Art. 6(1)(b)/(c)) and strictly passive public DNS/TLS/HTTP response metadata under legitimate interest (GDPR Art. 6(1)(f) & CNIL B2B guidelines). Unattended automated outreach excludes Switzerland (CH) and Germany (DE), where contact stays manual 1-to-1 only.
 - Zero Patient / Special-Category Health Data: Automated surveillance workflows query public aggregated endpoints (OpenFDA, ClinicalTrials.gov, PubMed/Europe PMC) or synthetic datasets. Clients must not transmit identifiable Protected Health Information (PHI) unless covered by a separate written Data Processing Addendum (DPA).
 - Sub-Processors & Retention: Business correspondence and invoices use encrypted cloud mail/accounting providers (Gmail/Zoho, Tiime, Stripe when enabled) under EU/standard contractual safeguards. Deliverables are retained during active engagement and statutory accounting periods (10 years for French invoices; immediate deletion upon request for evaluation previews).
 - Data Subject Rights & Immediate Opt-Out: Under EU GDPR Arts. 15-22 and Swiss nFADP, recipients may request access, rectification, or permanent suppression at any time by replying 'no' or emailing kaledbouchagraoui7@gmail.com.
