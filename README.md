@@ -2,9 +2,9 @@
   <img src="assets/sentinel_logo_full.png" alt="Sentinel — MedTech, Privacy & Regulatory Suite" width="760" />
 </div>
 
-# Public Data & Document-Prep CLI Orchestrator
+# Unified MedTech Regulatory & Post-Market Surveillance Compliance Suite
 
-**Open-source Python CLI combining (1) passive DNS/HTTP checks and (2) PubMed/Europe PMC PRISMA 2020 mechanical prep into structured Word/Excel outputs.**
+**Open-source Python CLI combining (1) EU MDR 2017/745 technical compliance & PRISMA 2020 mechanical prep, (2) openFDA MAUDE & ClinicalTrials.gov post-market surveillance (`pms_monitor/`), and (3) passive DNS/HTTP privacy checks (`57+` pytest tests).**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
@@ -32,7 +32,8 @@ This repository combines both engines into a single CLI orchestrator ([`medtech_
 | **Engine A: Digital Privacy & Security Auditor** | [`sentinel_scanner.py`](sentinel_scanner.py) | 25 passive OSINT checks across 5 pillars: Email Anti-Spoofing (`DMARC`/`SPF`/`MX`/`CAA`), Swiss nFADP & GDPR Web Privacy (`Google Fonts` leak, trackers, cookies, privacy link), Edge Security (`TLS`, `HSTS`, `CSP`, `X-Frame-Options`, `nosniff`, `security.txt`), Accessibility (`WCAG 2.1 AA`), and Technical SEO/Schema.org. | • `<domain>_scorecard.png` & `.pdf` (300 DPI)<br>• `<domain>_executive_audit.docx` (Landscape)<br>• `<domain>_technical_findings.xlsx` (4 sheets)<br>• `remediation_configs/` (`_headers`, Nginx, DNS) |
 | **Engine B: Clinical PRISMA 2020 Generator** | [`pilot_package_generator.py`](pilot_package_generator.py) | Strict mathematical PRISMA 2020 conservation accounting (`Identified - Duplicates = Screened = Excluded + Assessed`), automatic Vancouver reference formatting, and missing-DOI/conclusion QA flagging. | • `evidence_table.docx` (Landscape Word)<br>• `literature_screening.xlsx` (4 sheets)<br>• `prisma_flow_diagram.png` & `.pdf` (300 DPI) |
 | **Engine C: RA Operations Command Center & Multi-Vertical Adapter** | [`ra_operations_command_center.py`](ra_operations_command_center.py) | Operationalizes 5 core Regulatory Affairs safeguards: (1) **Upstream SLA & Attribution Ledger** (tracking R&D/CMC/Clinical handoff deltas vs. RA review time), (2) **Multi-Agency Guidance Drift Radar** (FDA/EMA/MHRA/ICH/Swissmedic), (3) **Neutral Statutory Hold Certificate** (objective readiness scoring), (4) **Automated eCTD M1–M5 Cross-Check Linter** (catching N-count/lot/shelf-life discrepancies), and (5) **Workload Guardrail + Multi-Vertical Adapter** (`medtech_ra`, `ai_governance`, `fintech_dora`, `esg_csrd`). | • `<slug>_ra_command_brief.docx` (Landscape)<br>• `<slug>_ectd_crosscheck_and_sla.xlsx` (6 sheets)<br>• `<slug>_ra_control_dashboard.png` & `.pdf` (300 DPI)<br>• `<slug>_ra_command_package.zip` |
-| **Combined Orchestrator** | [`medtech_suite.py`](medtech_suite.py) | Runs digital compliance, clinical PRISMA synthesis, and RA operations command center workflows from a single unified CLI. | • `00_Unified_Executive_Brief.docx`<br>• `01_Digital_Compliance_Audit/`<br>• `02_Clinical_PRISMA_Pilot/`<br>• `<slug>_unified_medtech_dossier.zip` |
+| **Engine D: Post-Market Surveillance (openFDA MAUDE & ClinicalTrials.gov v2)** | [`pms_monitor/pms_monitor.py`](pms_monitor/pms_monitor.py) | Queries public FDA MAUDE adverse-event counts, recalls, 510(k) clearances, and ClinicalTrials.gov v2 PMCF/competitor studies with monthly rolling Z-score signal flags for PRRC review (raw counts, not incidence rates). | • `<slug>_psur_safety_report.docx` (Landscape)<br>• `<slug>_pms_surveillance_workbook.xlsx` (4 sheets)<br>• `<slug>_pms_dashboard.png` & `.pdf` (300 DPI)<br>• `<slug>_pms_dossier.zip` |
+| **Combined Orchestrator** | [`medtech_suite.py`](medtech_suite.py) | Runs digital compliance, clinical PRISMA synthesis, RA operations, and PMS surveillance workflows from a unified package. | • `00_Unified_Executive_Brief.docx`<br>• `01_Digital_Compliance_Audit/`<br>• `02_Clinical_PRISMA_Pilot/`<br>• `<slug>_unified_medtech_dossier.zip` |
 
 ---
 
