@@ -4,6 +4,8 @@
 
 # Unified MedTech Regulatory & Post-Market Surveillance Compliance Suite
 
+[![CI](https://github.com/kaledbouchagraoui7-bot/medtech-regulatory-compliance-suite/actions/workflows/ci.yml/badge.svg)](https://github.com/kaledbouchagraoui7-bot/medtech-regulatory-compliance-suite/actions/workflows/ci.yml)
+
 **Open-source Python CLI combining (1) EU MDR 2017/745 technical compliance & PRISMA 2020 mechanical prep, (2) openFDA MAUDE & ClinicalTrials.gov post-market surveillance (`pms_monitor/`), and (3) passive DNS/HTTP privacy checks (`57+` pytest tests).**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
