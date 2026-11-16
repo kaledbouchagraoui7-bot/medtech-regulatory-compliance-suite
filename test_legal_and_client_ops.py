@@ -48,11 +48,10 @@ class TestLegalAndClientOps(unittest.TestCase):
         self.repo_dir = Path(__file__).resolve().parent
         self.eng_json = self.temp_dir / "engagements.json"
         self.staged_dir = self.temp_dir / "staged_replies"
-        self.pms_sample = json.loads(
-            (self.repo_dir.parent / "pms-clinicaltrials-openfda-monitor" / "sample_pms_input.json").read_text(
-                encoding="utf-8"
-            )
-        )
+        _pms_json = self.repo_dir / "pms_monitor" / "sample_pms_input.json"
+        if not _pms_json.exists():
+            _pms_json = self.repo_dir.parent / "pms-clinicaltrials-openfda-monitor" / "sample_pms_input.json"
+        self.pms_sample = json.loads(_pms_json.read_text(encoding="utf-8"))
         self.synthetic_audit = {
             "domain": "medtech-client.ch",
             "final_url": "https://www.medtech-client.ch/",

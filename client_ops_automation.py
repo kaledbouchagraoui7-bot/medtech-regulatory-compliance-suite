@@ -35,7 +35,11 @@ import openpyxl
 from docx import Document
 
 SUITE_DIR = Path(__file__).resolve().parent
-PMS_DIR = SUITE_DIR.parent / "pms-clinicaltrials-openfda-monitor"
+PMS_DIR = (
+    SUITE_DIR / "pms_monitor"
+    if (SUITE_DIR / "pms_monitor" / "pms_monitor.py").exists()
+    else SUITE_DIR.parent / "pms-clinicaltrials-openfda-monitor"
+)
 COMPBIO_DIR = SUITE_DIR.parent / "computational-biology-portfolio" / "computational-biology-portfolio"
 
 for _p in (str(SUITE_DIR), str(PMS_DIR), str(COMPBIO_DIR)):

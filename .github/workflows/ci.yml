@@ -22,7 +22,16 @@ jobs:
           if [ -f computational-biology-portfolio/requirements.txt ]; then pip install -r computational-biology-portfolio/requirements.txt; fi
       - name: Run pytest
         run: |
-          PYTHONPATH=. pytest -v
+          if [ ! -e ../pms-clinicaltrials-openfda-monitor ] && [ -d pms_monitor ]; then
+            ln -s "$PWD/pms_monitor" ../pms-clinicaltrials-openfda-monitor
+          fi
+          if [ ! -e ../sentinel-compliance-auditor ]; then
+            ln -s "$PWD" ../sentinel-compliance-auditor
+          fi
+          if [ ! -e ../computational-biology-portfolio ]; then
+            git clone --depth 1 https://github.com/kaledbouchagraoui7-bot/computational-biology-portfolio.git ../computational-biology-portfolio || true
+          fi
+          PYTHONPATH=.:pms_monitor pytest -v
       - name: Run ruff (if src/tests present)
         run: |
           if [ -d src ] && [ -d tests ]; then ruff check src tests; fi
